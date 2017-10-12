@@ -10,6 +10,7 @@ import (
 	"math/big"
 	"strconv"
 	"strings"
+    "regexp"
 )
 
 type ProcessFlag func(firstarg string, otherargs []string)
@@ -75,8 +76,11 @@ func processGenInputs(firstarg string, otherargs []string) {
     // generate signature and smart contract withdraw and deposit input data
     signature, _ := ProcessSignature(pks,sks,message)
 
-    signatureJson, _ := json.Marshal(signature)
-    fmt.Printf("%s\n",signatureJson)
+    signatureJson, _ := json.MarshalIndent(signature, "", "  ")
+    // regex just to put numbers between quotes
+    re := regexp.MustCompile("([0-9]+)")
+    signatureJsonStr := re.ReplaceAllString(string(signatureJson),"\"${1}\"")
+    fmt.Printf("%s\n",signatureJsonStr)
 }
 
 func processKeygen(firstarg string, otherargs []string) {
