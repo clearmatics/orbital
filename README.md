@@ -1,6 +1,23 @@
-Copyright (C) 2017 Clearmatics - All Rights Reserved
+# Orbital
 
-Clearmatics Transaction Privacy Tools
+Generate off-chain data for a Mobius smart contract
+
+## Installation
+
+    go get github.com/clearmatics/orbital
+
+## Usage
+
+Create a signature
+
+    orbital -create privkeys.json pubkeys.json output.json HexEncodedString
+
+Verify a signature
+
+    orbital -verify privkeys.json pubkeys.json output.json HexEncodedString`
+
+Print Ring smart contract random inputs (creates a random keypair and a signature from those)
+    orbital -geninputs n HexEncodedString`
 
 # Building
 
@@ -9,13 +26,3 @@ Clearmatics Transaction Privacy Tools
 - Build and run the unittests: make test
 - Run gofmt over the whole tree: make format
 
-# Running
-
-- Create a signature
-    `./ringtool -create privkeys.json pubkeys.json output.json HexEncodedString`
-
-- Verify a signature
-    `./ringtool -verify privkeys.json pubkeys.json output.json HexEncodedString`
-
-- Print Ring smart contract random inputs (creates a random keypair and a signature from those)
-    `./ringtool -geninputs n HexEncodedString`

@@ -1,5 +1,3 @@
-// Copyright (C) 2017 Clearmatics - All Rights Reserved
-
 package main
 
 import (
@@ -8,9 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/big"
+	"regexp"
 	"strconv"
 	"strings"
-    "regexp"
 )
 
 type ProcessFlag func(firstarg string, otherargs []string)
@@ -64,27 +62,27 @@ func main() {
 }
 
 func processGenInputs(firstarg string, otherargs []string) {
-    // regex just to put numbers between quotes
-    re := regexp.MustCompile("([0-9]+)")
+	// regex just to put numbers between quotes
+	re := regexp.MustCompile("([0-9]+)")
 
 	var sks []*big.Int
 	var pks []PubKeyStr
 
 	n, _ := strconv.Atoi(firstarg)
-    message := otherargs[0]
+	message := otherargs[0]
 
-    // generate keypair (private and public)
+	// generate keypair (private and public)
 	pks, sks = genKeys(n)
 
-    // generate signature and smart contract withdraw and deposit input data
-    signature, _ := ProcessSignature(pks,sks,message)
+	// generate signature and smart contract withdraw and deposit input data
+	signature, _ := ProcessSignature(pks, sks, message)
 
-    // print result
-    pkJson, _ := json.MarshalIndent(pks, "  ", "  ")
-    signatureJson, _ := json.MarshalIndent(signature, "  ", "  ")
-    signatureJsonStr := re.ReplaceAllString(string(signatureJson),"\"${1}\"")
-    resultStr := "{\n  \"deposit_input\": " + string(pkJson) + ",\n  \"withdraw_input\": " + signatureJsonStr + "\n}"
-    fmt.Printf("%s\n",resultStr)
+	// print result
+	pkJSON, _ := json.MarshalIndent(pks, "  ", "  ")
+	signatureJSON, _ := json.MarshalIndent(signature, "  ", "  ")
+	signatureJSONStr := re.ReplaceAllString(string(signatureJSON), "\"${1}\"")
+	resultStr := "{\n  \"deposit_input\": " + string(pkJSON) + ",\n  \"withdraw_input\": " + signatureJSONStr + "\n}"
+	fmt.Printf("%s\n", resultStr)
 }
 
 func processKeygen(firstarg string, otherargs []string) {
@@ -96,11 +94,11 @@ func processKeygen(firstarg string, otherargs []string) {
 
 	pks, sks = genKeys(n)
 
-	sksJson, _ := json.MarshalIndent(sks, "", "\t")
-	pksJson, _ := json.MarshalIndent(pks, "", "\t")
+	sksJSON, _ := json.MarshalIndent(sks, "", "\t")
+	pksJSON, _ := json.MarshalIndent(pks, "", "\t")
 
-	ioutil.WriteFile(otherargs[0], []byte(string(sksJson)), 0777)
-	ioutil.WriteFile(otherargs[1], []byte(string(pksJson)), 0777)
+	ioutil.WriteFile(otherargs[0], []byte(string(sksJSON)), 0777)
+	ioutil.WriteFile(otherargs[1], []byte(string(pksJSON)), 0777)
 
 }
 

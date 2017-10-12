@@ -1,5 +1,3 @@
-// Copyright (C) 2017 Clearmatics - All Rights Reserved
-
 package main
 
 import (
