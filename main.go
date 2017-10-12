@@ -73,7 +73,8 @@ func processGenInputs(firstarg string, otherargs []string) {
 	pks, sks = genKeys(n)
 
     // generate signature and smart contract withdraw and deposit input data
-    ProcessSignature(pks,sks,message)
+    signature, _ := ProcessSignature(pks,sks,message)
+    fmt.Printf("%s\n",signature)
 }
 
 func processKeygen(firstarg string, otherargs []string) {

@@ -315,7 +315,7 @@ func verify(privateKeysFile string, publicKeysFile string, outputFilename string
 	return bytes.Equal(outputBuffer, compareBuffer), nil
 }
 
-func ProcessSignature(publicKeys []PubKeyStr, privateKeys []*big.Int, rawMessage string) ([]byte, error) {
+func ProcessSignature(publicKeys []PubKeyStr, privateKeys []*big.Int, rawMessage string) ([]RingSignature, error) {
 
     // message hexadecimal string to bytes
 	var message []byte
@@ -328,50 +328,27 @@ func ProcessSignature(publicKeys []PubKeyStr, privateKeys []*big.Int, rawMessage
 	}
 
     // populate ring with keypairs
-    jsonPubPoint := ""
     var ring Ring
-    //bigPub := new(big.Int)
     for i := 0; i < len(privateKeys); i++ {
-        //bigPub.SetString(privateKeys[i].Y,10)
-        //fmt.Printf("%x\n",bigPub)
-        //fmt.Printf("%v typeof: %v\n",publicKeys[i].X,reflect.TypeOf(publicKeys[i].X))
+        // type cast to the rign struct
 		xPub := new(big.Int)
         xPub.SetString(publicKeys[i].X,10)
 		yPub := new(big.Int)
         yPub.SetString(publicKeys[i].Y,10)
-		//privKey := privateKeys[i]
-        /*
-        fmt.Printf("====== %d ======\nPubkey:\n\tx: %v\n",i,xPub)
-        fmt.Printf("\ty: %v\n",yPub)
-        fmt.Printf("PrivKey: %v\n",privKey)
-        */
 
-        jsonPubPoint = fmt.Sprintf("%s[\n\t%s,\n\t%s\n],", jsonPubPoint, xPub, yPub)
         // fills the key ring
 		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{xPub, yPub}})
     }
 
     // generate signature
-    jsonSignatureStr := ""
+    var signaturesArr []RingSignature
     for i := 0; i < len(privateKeys); i++ {
 		privKey := privateKeys[i]
-		signature, ctlist := SignAndVerify(ring, privKey, message)
-        xTauStr := fmt.Sprintf("%s", signature.Tau.X)
-        yTauStr := fmt.Sprintf("%s", signature.Tau.Y)
-        ctlistStr := fmt.Sprintf("%s", string(ctlist))
-        jsonSignatureStr = fmt.Sprintf("%s[\n\t%s,\n\t%s,\n\t%s\n],",jsonSignatureStr,xTauStr,yTauStr,ctlistStr)
-        /*
-        fmt.Printf("====== Signature %d ====== [ tauX, tauY, ctList ]\n", i)
-        fmt.Printf("\ttau: \n\tx: %v \n\ty: %v\n", signature.Ctlist, signature.Tau.X, signature.Tau.Y)
-        fmt.Printf("\tctlist: %v\n", signature.Ctlist)
-        */
-        //fmt.Printf("\tctlist: %v\n", ctList)
+        // signing function
+		signature, _/*ctlist*/ := SignAndVerify(ring, privKey, message)
+        signaturesArr = append(signaturesArr,signature)
     }
-
-    fmt.Printf("message: %s\n",rawMessage)
-    fmt.Printf("deposit inputs:\n"+jsonPubPoint+"\n")
-    fmt.Printf("withdraw inputs:\n"+jsonSignatureStr+"\n")
-    return nil, nil
+    return signaturesArr, nil
 }
 
 func Process(privateKeysFile string, publicKeysFile string, rawMessage string) ([]byte, error) {
