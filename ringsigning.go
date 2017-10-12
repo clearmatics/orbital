@@ -317,38 +317,38 @@ func verify(privateKeysFile string, publicKeysFile string, outputFilename string
 
 func ProcessSignature(publicKeys []PubKeyStr, privateKeys []*big.Int, rawMessage string) ([]RingSignature, error) {
 
-    // message hexadecimal string to bytes
+	// message hexadecimal string to bytes
 	var message []byte
-    var err error
+	var err error
 	if rawMessage != "" {
-        message, err = hex.DecodeString(rawMessage)
-        if err != nil {
-            return nil, err
-        }
+		message, err = hex.DecodeString(rawMessage)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-    // populate ring with keypairs
-    var ring Ring
-    for i := 0; i < len(privateKeys); i++ {
-        // type cast to the rign struct
+	// populate ring with keypairs
+	var ring Ring
+	for i := 0; i < len(privateKeys); i++ {
+		// type cast to the rign struct
 		xPub := new(big.Int)
-        xPub.SetString(publicKeys[i].X,10)
+		xPub.SetString(publicKeys[i].X, 10)
 		yPub := new(big.Int)
-        yPub.SetString(publicKeys[i].Y,10)
+		yPub.SetString(publicKeys[i].Y, 10)
 
-        // fills the key ring
+		// fills the key ring
 		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{xPub, yPub}})
-    }
+	}
 
-    // generate signature
-    var signaturesArr []RingSignature
-    for i := 0; i < len(privateKeys); i++ {
+	// generate signature
+	var signaturesArr []RingSignature
+	for i := 0; i < len(privateKeys); i++ {
 		privKey := privateKeys[i]
-        // signing function
-		signature, _/*ctlist*/ := SignAndVerify(ring, privKey, message)
-        signaturesArr = append(signaturesArr,signature)
-    }
-    return signaturesArr, nil
+		// signing function
+		signature, _ /*ctlist*/ := SignAndVerify(ring, privKey, message)
+		signaturesArr = append(signaturesArr, signature)
+	}
+	return signaturesArr, nil
 }
 
 func Process(privateKeysFile string, publicKeysFile string, rawMessage string) ([]byte, error) {
