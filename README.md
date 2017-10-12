@@ -12,7 +12,10 @@ Clearmatics Transaction Privacy Tools
 # Running
 
 - Create a signature
-    ./go -create privkeys.json pubkeys.json output.json HexEncodedString
+    `./ringtool -create privkeys.json pubkeys.json output.json HexEncodedString`
 
 - Verify a signature
-    ./go -verify privkeys.json pubkeys.json output.json HexEncodedString
+    `./ringtool -verify privkeys.json pubkeys.json output.json HexEncodedString`
+
+- Print Ring smart contract random inputs (creates a random keypair and a signature from those)
+    `./ringtool -geninputs n HexEncodedString`
