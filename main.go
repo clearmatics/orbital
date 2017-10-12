@@ -64,6 +64,9 @@ func main() {
 }
 
 func processGenInputs(firstarg string, otherargs []string) {
+    // regex just to put numbers between quotes
+    re := regexp.MustCompile("([0-9]+)")
+
 	var sks []*big.Int
 	var pks []PubKeyStr
 
@@ -76,11 +79,12 @@ func processGenInputs(firstarg string, otherargs []string) {
     // generate signature and smart contract withdraw and deposit input data
     signature, _ := ProcessSignature(pks,sks,message)
 
-    signatureJson, _ := json.MarshalIndent(signature, "", "  ")
-    // regex just to put numbers between quotes
-    re := regexp.MustCompile("([0-9]+)")
+    // print result
+    pkJson, _ := json.MarshalIndent(pks, "  ", "  ")
+    signatureJson, _ := json.MarshalIndent(signature, "  ", "  ")
     signatureJsonStr := re.ReplaceAllString(string(signatureJson),"\"${1}\"")
-    fmt.Printf("%s\n",signatureJsonStr)
+    resultStr := "{\n  \"deposit_input\": " + string(pkJson) + ",\n  \"withdraw_input\": " + signatureJsonStr + "\n}"
+    fmt.Printf("%s\n",resultStr)
 }
 
 func processKeygen(firstarg string, otherargs []string) {
