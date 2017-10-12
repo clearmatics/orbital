@@ -74,7 +74,9 @@ func processGenInputs(firstarg string, otherargs []string) {
 
     // generate signature and smart contract withdraw and deposit input data
     signature, _ := ProcessSignature(pks,sks,message)
-    fmt.Printf("%s\n",signature)
+
+    signatureJson, _ := json.Marshal(signature)
+    fmt.Printf("%s\n",signatureJson)
 }
 
 func processKeygen(firstarg string, otherargs []string) {
