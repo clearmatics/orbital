@@ -317,6 +317,7 @@ func verify(privateKeysFile string, publicKeysFile string, outputFilename string
 
 func ProcessSignature(publicKeys []PubKeyStr, privateKeys []*big.Int, rawMessage string) ([]byte, error) {
 
+    // message hexadecimal string to bytes
 	var message []byte
     var err error
 	if rawMessage != "" {
@@ -326,8 +327,8 @@ func ProcessSignature(publicKeys []PubKeyStr, privateKeys []*big.Int, rawMessage
         }
 	}
 
+    // populate ring with keypairs
     jsonPubPoint := ""
-    jsonSignatureStr := ""
     var ring Ring
     //bigPub := new(big.Int)
     for i := 0; i < len(privateKeys); i++ {
@@ -350,6 +351,8 @@ func ProcessSignature(publicKeys []PubKeyStr, privateKeys []*big.Int, rawMessage
 		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{xPub, yPub}})
     }
 
+    // generate signature
+    jsonSignatureStr := ""
     for i := 0; i < len(privateKeys); i++ {
 		privKey := privateKeys[i]
 		signature, ctlist := SignAndVerify(ring, privKey, message)
@@ -368,7 +371,7 @@ func ProcessSignature(publicKeys []PubKeyStr, privateKeys []*big.Int, rawMessage
     fmt.Printf("message: %s\n",rawMessage)
     fmt.Printf("deposit inputs:\n"+jsonPubPoint+"\n")
     fmt.Printf("withdraw inputs:\n"+jsonSignatureStr+"\n")
-    return nil,nil
+    return nil, nil
 }
 
 func Process(privateKeysFile string, publicKeysFile string, rawMessage string) ([]byte, error) {

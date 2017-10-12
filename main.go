@@ -69,11 +69,10 @@ func processGenInputs(firstarg string, otherargs []string) {
 	n, _ := strconv.Atoi(firstarg)
     message := otherargs[0]
 
-    // generate keys
+    // generate keypair (private and public)
 	pks, sks = genKeys(n)
-	//sksJson, _ := json.MarshalIndent(sks, "", "\t")
-	//pksJson, _ := json.MarshalIndent(pks, "", "\t")
 
+    // generate signature and smart contract withdraw and deposit input data
     ProcessSignature(pks,sks,message)
 }
 
