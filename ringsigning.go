@@ -329,9 +329,9 @@ func GenerateRandomRing(ringSize int) (Ring, []PubKeyStr, []*big.Int) {
 		yPub := new(big.Int)
         yPub.SetString(pks[i].Y,10)
 
-        // fills the key ring
+		// fills the key ring
 		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{xPub, yPub}})
-    }
+	}
 
     return ring, pks, sks
 }
@@ -342,11 +342,11 @@ func ProcessSignature(ring Ring, privateKeys []*big.Int, message []byte) ([]Ring
     var signaturesArr []RingSignature
     for i := 0; i < len(privateKeys); i++ {
 		privKey := privateKeys[i]
-        // signing function
-		signature, _/*ctlist*/ := SignAndVerify(ring, privKey, message)
-        signaturesArr = append(signaturesArr,signature)
-    }
-    return signaturesArr, nil
+		// signing function
+		signature, _ /*ctlist*/ := SignAndVerify(ring, privKey, message)
+		signaturesArr = append(signaturesArr, signature)
+	}
+	return signaturesArr, nil
 }
 
 func Process(privateKeysFile string, publicKeysFile string, rawMessage string) ([]byte, error) {

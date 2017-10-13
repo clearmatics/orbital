@@ -1,24 +1,34 @@
-# Copyright (C) 2017 Clearmatics - All Rights Reserved
-
-# This Makefile is meant to be used mainly by CI
-.PHONY: all test clean
-
-all:
-	build/env.sh go get
-	build/env.sh go build
-
-test: 	all
-	build/env.sh go get github.com/stretchr/testify
-	build/env.sh go test ./...
-
-coverage: 	all
-	build/env.sh go get github.com/stretchr/testify
-	build/env.sh build/coverage.sh
-	build/env.sh go tool cover -html=coverage.out -o=coverage.html
+.DEFAULT_GOAL := build
+GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+SHELL=/bin/bash
 
 clean:
-	rm -fr build/_workspace/Godeps/
+	@rm -f orbital
+
+test:
+	@go test ./...
 
 format:
-	build/env.sh gofmt -s -w .
+	@gofmt -s -w .
+
+coverage:
+	go test -coverprofile=coverage.out 
+	@go tool cover -html=coverage.out
+
+build:
+	@go build .
+
+check:
+	@if [ -n "$(shell gofmt -l ${GOFILES_NOVENDOR})" ]; then \
+		echo 1>&2 'The following files need to be formatted:'; \
+		gofmt -l .; \
+		exit 1; \
+		fi
+
+vet:
+	@go vet ${GOFILES_NOVENDOR}
+
+lint:
+	@golint ${GOFILES_NOVENDOR}
+
 
