@@ -3,7 +3,7 @@ GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 SHELL=/bin/bash
 
 clean:
-	@rm orbital
+	@rm -f orbital
 
 test:
 	@go test ./...
