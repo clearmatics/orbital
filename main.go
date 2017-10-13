@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"encoding/hex"
+    "log"
 )
 
 type ProcessFlag func(firstarg string, otherargs []string)
@@ -62,6 +63,20 @@ func main() {
 	}
 }
 
+func hexString2Bytes(rawMessage string) ([]byte) {
+	var message []byte
+    var err error
+	if rawMessage != "" {
+        message, err = hex.DecodeString(rawMessage)
+        if err == nil {
+            return message
+        }
+	}
+    // FAIL
+    log.Fatal("Failed to parse the message")
+    return nil
+}
+
 func processGenInputs(firstarg string, otherargs []string) {
 	// regex just to put numbers between quotes
 	re := regexp.MustCompile("([0-9]+)")
@@ -76,16 +91,7 @@ func processGenInputs(firstarg string, otherargs []string) {
 
     // message hexadecimal string to bytes
     rawMessage := otherargs[0]
-	var message []byte
-    var err error
-	if rawMessage != "" {
-        message, err = hex.DecodeString(rawMessage)
-        if err != nil {
-            // FAIL
-            fmt.Println("Failed to parse the message")
-            return
-        }
-	}
+    message := hexString2Bytes(rawMessage)
 
     // generate signature and smart contract withdraw and deposit input data
     signature, _ := ProcessSignature(ring,sks,message)
@@ -96,7 +102,7 @@ func processGenInputs(firstarg string, otherargs []string) {
         verif = RingVerif(ring, message, signature[i])
         if !verif {
             // FAIL
-            fmt.Println("Failed to verify ring signature")
+            log.Fatal("Failed to verify ring signature")
             return
         }
     }
