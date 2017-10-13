@@ -1,17 +1,21 @@
 GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
 SHELL=/bin/bash
 
+clean:
+	@rm orbital
+
 test:
-	go test ./...
+	@go test ./...
 
 format:
-	gofmt -s -w .
+	@gofmt -s -w .
 
 coverage:
-	go tool cover -html=coverage.out -o=coverage.html
+	go test -coverprofile=coverage.out 
+	@go tool cover -html=coverage.out
 
 build:
-	go build .
+	@go build .
 
 check:
 	@if [ -n "$(shell gofmt -l ${GOFILES_NOVENDOR})" ]; then \
@@ -24,7 +28,7 @@ vet:
 	@go vet ${GOFILES_NOVENDOR}
 
 lint:
-	golint ${GOFILES_NOVENDOR}
+	@golint ${GOFILES_NOVENDOR}
 
 
 
