@@ -34,3 +34,4 @@ Dependencies are managed via [dep][1]. Dependencies are checked into this reposi
 The project follows standard go conventions using `gofmt`. If you wish to contribute to the project please follow standard Go conventions. The CI server automatically runs these checks.
 
 [1]: https://github.com/golang/dep
+[2]: https://github.com/golang/dep/blob/master/README.md
