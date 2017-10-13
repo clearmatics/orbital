@@ -315,30 +315,28 @@ func verify(privateKeysFile string, publicKeysFile string, outputFilename string
 	return bytes.Equal(outputBuffer, compareBuffer), nil
 }
 
-func ProcessSignature(publicKeys []PubKeyStr, privateKeys []*big.Int, rawMessage string) ([]RingSignature, error) {
-
-    // message hexadecimal string to bytes
-	var message []byte
-    var err error
-	if rawMessage != "" {
-        message, err = hex.DecodeString(rawMessage)
-        if err != nil {
-            return nil, err
-        }
-	}
-
+func GenerateRandomRing(ringSize int) (Ring, []PubKeyStr, []*big.Int) {
+	var sks []*big.Int
+	var pks []PubKeyStr
+    // generate keypair (private and public)
+	pks, sks = genKeys(ringSize)
     // populate ring with keypairs
     var ring Ring
-    for i := 0; i < len(privateKeys); i++ {
+    for i := 0; i < len(pks); i++ {
         // type cast to the rign struct
 		xPub := new(big.Int)
-        xPub.SetString(publicKeys[i].X,10)
+        xPub.SetString(pks[i].X,10)
 		yPub := new(big.Int)
-        yPub.SetString(publicKeys[i].Y,10)
+        yPub.SetString(pks[i].Y,10)
 
         // fills the key ring
 		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{xPub, yPub}})
     }
+
+    return ring, pks, sks
+}
+
+func ProcessSignature(ring Ring, privateKeys []*big.Int, message []byte) ([]RingSignature, error) {
 
     // generate signature
     var signaturesArr []RingSignature

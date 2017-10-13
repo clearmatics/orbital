@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
     "regexp"
+	"encoding/hex"
 )
 
 type ProcessFlag func(firstarg string, otherargs []string)
@@ -71,13 +72,36 @@ func processGenInputs(firstarg string, otherargs []string) {
 	var pks []PubKeyStr
 
 	n, _ := strconv.Atoi(firstarg)
-    message := otherargs[0]
 
-    // generate keypair (private and public)
-	pks, sks = genKeys(n)
+    // generate key ring
+    ring, pks,sks := GenerateRandomRing(n)
+
+    // message hexadecimal string to bytes
+    rawMessage := otherargs[0]
+	var message []byte
+    var err error
+	if rawMessage != "" {
+        message, err = hex.DecodeString(rawMessage)
+        if err != nil {
+            // FAIL
+            fmt.Println("Failed to parse the message")
+            return
+        }
+	}
 
     // generate signature and smart contract withdraw and deposit input data
-    signature, _ := ProcessSignature(pks,sks,message)
+    signature, _ := ProcessSignature(ring,sks,message)
+
+    // verify signature
+    verif := true
+    for i := 0; i < len(signature); i++ {
+        verif = RingVerif(ring, message, signature[i])
+        if !verif {
+            // FAIL
+            fmt.Println("Failed to verify ring signature")
+            return
+        }
+    }
 
     // print result
     pkJson, _ := json.MarshalIndent(pks, "  ", "  ")
