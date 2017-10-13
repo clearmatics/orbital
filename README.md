@@ -27,8 +27,6 @@ Print Ring smart contract random inputs (creates a random keypair and a signatur
 - Build and run the unittests: make test
 - Run gofmt over the whole tree: make format
 
-<<<<<<< HEAD
-=======
 # Development
 
 Dependencies are managed via [dep][1]. Dependencies are checked into this repository in the `vendor` folder. Documentation for managing dependencies is available on the [dep README][2].
@@ -37,4 +35,3 @@ The project follows standard go conventions using `gofmt`. If you wish to contri
 
 [1]: https://github.com/golang/dep
 [2]: https://github.com/golang/dep/blob/master/README.md
->>>>>>> cleanup
