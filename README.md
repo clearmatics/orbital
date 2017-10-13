@@ -17,6 +17,7 @@ Verify a signature
     orbital -verify privkeys.json pubkeys.json output.json HexEncodedString`
 
 Print Ring smart contract random inputs (creates a random keypair and a signature from those)
+
     orbital -geninputs n HexEncodedString`
 
 # Building
