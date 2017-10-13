@@ -1,0 +1,23 @@
+stages:
+  - test
+
+variables:
+  REPO_NAME: github.com/clearmatics/orbital
+
+cache:
+  paths:
+    - vendor
+  untracked: true
+
+services:
+  - docker:dind
+
+test:
+  image: golang:1.9
+  stage: test
+  script:
+    - mkdir -p $GOPATH/src/$REPO_NAME
+    - mv $CI_PROJECT_DIR/* $GOPATH/src/$REPO_NAME/
+    - cd $GOPATH/src/$REPO_NAME
+    - make check
+    - make test
