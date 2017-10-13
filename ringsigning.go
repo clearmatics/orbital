@@ -318,29 +318,29 @@ func verify(privateKeysFile string, publicKeysFile string, outputFilename string
 func GenerateRandomRing(ringSize int) (Ring, []PubKeyStr, []*big.Int) {
 	var sks []*big.Int
 	var pks []PubKeyStr
-    // generate keypair (private and public)
+	// generate keypair (private and public)
 	pks, sks = genKeys(ringSize)
-    // populate ring with keypairs
-    var ring Ring
-    for i := 0; i < len(pks); i++ {
-        // type cast to the rign struct
+	// populate ring with keypairs
+	var ring Ring
+	for i := 0; i < len(pks); i++ {
+		// type cast to the rign struct
 		xPub := new(big.Int)
-        xPub.SetString(pks[i].X,10)
+		xPub.SetString(pks[i].X, 10)
 		yPub := new(big.Int)
-        yPub.SetString(pks[i].Y,10)
+		yPub.SetString(pks[i].Y, 10)
 
 		// fills the key ring
 		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{xPub, yPub}})
 	}
 
-    return ring, pks, sks
+	return ring, pks, sks
 }
 
 func ProcessSignature(ring Ring, privateKeys []*big.Int, message []byte) ([]RingSignature, error) {
 
-    // generate signature
-    var signaturesArr []RingSignature
-    for i := 0; i < len(privateKeys); i++ {
+	// generate signature
+	var signaturesArr []RingSignature
+	for i := 0; i < len(privateKeys); i++ {
 		privKey := privateKeys[i]
 		// signing function
 		signature, _ /*ctlist*/ := SignAndVerify(ring, privKey, message)
