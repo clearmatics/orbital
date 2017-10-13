@@ -1,12 +1,30 @@
-.PHONY: all test clean
+GOFILES_NOVENDOR = $(shell find . -type f -name '*.go' -not -path "./vendor/*")
+SHELL=/bin/bash
 
-test: 	all
+test:
 	go test ./...
 
-format: all
+format:
 	gofmt -s -w .
 
-coverage: 	all
+coverage:
 	go tool cover -html=coverage.out -o=coverage.html
+
+build:
+	go build .
+
+check:
+	@if [ -n "$(shell gofmt -l ${GOFILES_NOVENDOR})" ]; then \
+		echo 1>&2 'The following files need to be formatted:'; \
+		gofmt -l .; \
+		exit 1; \
+		fi
+
+vet:
+	@go vet ${GOFILES_NOVENDOR}
+
+lint:
+	golint ${GOFILES_NOVENDOR}
+
 
 
