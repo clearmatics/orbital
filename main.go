@@ -92,13 +92,11 @@ func processGenInputs(firstarg string, otherargs []string) {
     message := hexString2Bytes(rawMessage)
 
     // generate signature and smart contract withdraw and deposit input data
-    signature, _ := ProcessSignature(ring,sks,message)
+    signatureArr, _ := ProcessSignature(ring,sks,message)
 
     // verify signature
-    verif := true
-    for i := 0; i < len(signature); i++ {
-        verif = RingVerif(ring, message, signature[i])
-        if !verif {
+    for _, signature := range signatureArr {
+        if !RingVerif(ring, message, signature) {
             // FAIL
             log.Fatal("Failed to verify ring signature")
             return
@@ -109,7 +107,7 @@ func processGenInputs(firstarg string, otherargs []string) {
 	re := regexp.MustCompile("([0-9]+)")
 	// print result
 	pkJSON, _ := json.MarshalIndent(pks, "  ", "  ")
-	signatureJSON, _ := json.MarshalIndent(signature, "  ", "  ")
+	signatureJSON, _ := json.MarshalIndent(signatureArr, "  ", "  ")
 	signatureJSONStr := re.ReplaceAllString(string(signatureJSON), "\"${1}\"")
 	resultStr := "{\n  \"ring\": " + string(pkJSON) + ",\n  \"signatures\": " + signatureJSONStr + "\n}"
 	fmt.Printf("%s\n", resultStr)
@@ -166,18 +164,18 @@ func processGenerateSignature(firstarg string, otherargs []string) {
     keysFile := firstarg
     rawMessage := otherargs[0]
 
-    type PublicKeyPoint struct {
-        X string `json:"x"`
-        Y string `json:"y"`
-    }
     type KeyPair struct {
-        Private []string `json:"private"`
-        Public []PublicKeyPoint `json:"public"`
+        Private []*big.Int `json:"private"`
+        Public []CurvePoint `json:"public"`
     }
 
 	keysFileData, err := ioutil.ReadFile(keysFile)
+    // Integers can't have " to parse
+	re := regexp.MustCompile("(\"([0-9]+)\")")
+	keysFileDataStr := re.ReplaceAllString(string(keysFileData), "${2}")
+
     var keyPair KeyPair;
-    err = json.Unmarshal(keysFileData, &keyPair)
+    err = json.Unmarshal([]byte(keysFileDataStr), &keyPair)
     if err != nil {
         // FAIL
         log.Fatal("Failed to parse file: %s", err)
@@ -187,27 +185,18 @@ func processGenerateSignature(firstarg string, otherargs []string) {
     // message hexadecimal string to bytes
     message := hexString2Bytes(rawMessage)
 
-	var sks []*big.Int
-    //GENERATE PRIVATE KEYS ARRAY WITH BIG INT
-    for i := 0; i < len(keyPair.Private); i++ {
-		privKey := new(big.Int)
-        privKey.SetString(keyPair.Private[i], 10)
-        sks = append(sks,privKey)
-    }
-    //GENERATE PUBLIC KEYS POINTS ARRAY WITH BIG INT
+    sks := keyPair.Private
+    // create ring
     var ring Ring
-    for i := 0; i < len(keyPair.Public); i++ {
-		xPub := new(big.Int)
-        xPub.SetString(keyPair.Public[i].X, 10)
-		yPub := new(big.Int)
-        yPub.SetString(keyPair.Public[i].Y, 10)
-		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{xPub, yPub}})
+    for _, pubKey := range keyPair.Public {
+        ring.PubKeys = append(ring.PubKeys, PubKey{pubKey})
     }
-    //GENERATE SIGNATURE
+
+    // generate signature
     signature, _ := ProcessSignature(ring,sks,message)
 
 	// regex just to put numbers between quotes
-	re := regexp.MustCompile("([0-9]+)")
+	re = regexp.MustCompile("([0-9]+)")
 	// print result
 	pkJSON, _ := json.MarshalIndent(keyPair.Public, "  ", "  ")
 	signatureJSON, _ := json.MarshalIndent(signature, "  ", "  ")
