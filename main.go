@@ -4,13 +4,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	//"io/ioutil"
 	"math/big"
 	"regexp"
 	"strconv"
 	"strings"
 	"encoding/hex"
     "log"
+	"io/ioutil"
 )
 
 type ProcessFlag func(firstarg string, otherargs []string)
@@ -27,9 +28,11 @@ type ProcessOption struct {
 	Process ProcessFlag
 }
 
+	//{"genkeys", "g", processKeygen, "genkeys n privkeys.json pubkeys.json"},
+	//{"create", "c", processCreate, "create privkeys.json pubkeys.json output.json HexEncodedString"},
 var subCommands = []CmdOption{
-	{"create", "c", processCreate, "create privkeys.json pubkeys.json output.json HexEncodedString"},
-	{"genkeys", "g", processKeygen, "genkeys n privkeys.json pubkeys.json"},
+	{"signature", "c", processGenerateSignature, "signature keys.json HexEncodedString"},
+	{"genkeys", "g", processKeygen, "genkeys n"},
 	{"geninputs", "i", processGenInputs, "geninputs n HexEncodedString"},
 }
 
@@ -78,9 +81,6 @@ func hexString2Bytes(rawMessage string) ([]byte) {
 }
 
 func processGenInputs(firstarg string, otherargs []string) {
-	// regex just to put numbers between quotes
-	re := regexp.MustCompile("([0-9]+)")
-
 	var sks []*big.Int
 	var pks []PubKeyStr
 
@@ -107,6 +107,8 @@ func processGenInputs(firstarg string, otherargs []string) {
         }
     }
 
+	// regex just to put numbers between quotes
+	re := regexp.MustCompile("([0-9]+)")
 	// print result
 	pkJSON, _ := json.MarshalIndent(pks, "  ", "  ")
 	signatureJSON, _ := json.MarshalIndent(signature, "  ", "  ")
@@ -115,6 +117,73 @@ func processGenInputs(firstarg string, otherargs []string) {
 	fmt.Printf("%s\n", resultStr)
 }
 
+func processGenerateSignature(firstarg string, otherargs []string) {
+    keysFile := firstarg
+    rawMessage := otherargs[0]
+
+    type PublicKeyPoint struct {
+        X string `json:"x"`
+        Y string `json:"y"`
+    }
+    type KeyPair struct {
+        Private []string `json:"private"`
+        Public []PublicKeyPoint `json:"public"`
+    }
+
+	keysFileData, err := ioutil.ReadFile(keysFile)
+    var keyPair KeyPair;
+    err = json.Unmarshal(keysFileData, &keyPair)
+    if err != nil {
+        // FAIL
+        log.Fatal("Failed to parse file: %s", err)
+		//return 
+	}
+
+    // message hexadecimal string to bytes
+    message := hexString2Bytes(rawMessage)
+
+	var sks []*big.Int
+    //GENERATE PRIVATE KEYS ARRAY WITH BIG INT
+    for i := 0; i < len(keyPair.Private); i++ {
+		privKey := new(big.Int)
+        privKey.SetString(keyPair.Private[i], 10)
+        sks = append(sks,privKey)
+    }
+    //GENERATE PUBLIC KEYS POINTS ARRAY WITH BIG INT
+    var ring Ring
+    for i := 0; i < len(keyPair.Public); i++ {
+		xPub := new(big.Int)
+        xPub.SetString(keyPair.Public[i].X, 10)
+		yPub := new(big.Int)
+        yPub.SetString(keyPair.Public[i].Y, 10)
+		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{xPub, yPub}})
+    }
+    //GENERATE SIGNATURE
+    signature, _ := ProcessSignature(ring,sks,message)
+
+	// regex just to put numbers between quotes
+	re := regexp.MustCompile("([0-9]+)")
+	// print result
+	signatureJSON, _ := json.MarshalIndent(signature, "  ", "  ")
+	signatureJSONStr := re.ReplaceAllString(string(signatureJSON), "\"${1}\"")
+	resultStr := "{\n  \"withdraw_input\": " + signatureJSONStr + "\n}"
+	fmt.Printf("%s\n", resultStr)
+}
+
+func processKeygen(firstarg string, otherargs []string) {
+	var sks []*big.Int
+	var pks []PubKeyStr
+
+	n, _ := strconv.Atoi(firstarg)
+
+    // generate key ring
+    _, pks,sks = GenerateRandomRing(n)
+
+	sksJSON, _ := json.MarshalIndent(sks, "  ", "  ")
+	pksJSON, _ := json.MarshalIndent(pks, "  ", "  ")
+    fmt.Printf("{\n  private: %s,\n  public: %s\n}\n", sksJSON,pksJSON)
+}
+/*
 func processKeygen(firstarg string, otherargs []string) {
 
 	var sks []*big.Int
@@ -131,6 +200,7 @@ func processKeygen(firstarg string, otherargs []string) {
 	ioutil.WriteFile(otherargs[1], []byte(string(pksJSON)), 0777)
 
 }
+*/
 
 func processCreate(firstarg string, otherargs []string) {
 	if len(otherargs) == 3 && strings.HasPrefix(otherargs[2], "0x") {
