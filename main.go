@@ -207,8 +207,8 @@ func processKeygen(firstarg string, otherargs []string) {
 
     // print keys
     var sksStrArr []string
-    for i := 0; i < len(sks); i++ {
-        sksStrArr = append(sksStrArr,sks[i].String())
+    for _, privateKey := range sks {
+        sksStrArr = append(sksStrArr,privateKey.String())
     }
 	sksJSON, _ := json.MarshalIndent(sksStrArr, "  ", "  ")
 	pksJSON, _ := json.MarshalIndent(pks, "  ", "  ")

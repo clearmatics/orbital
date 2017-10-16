@@ -340,8 +340,7 @@ func ProcessSignature(ring Ring, privateKeys []*big.Int, message []byte) ([]Ring
 
     // generate signature
     var signaturesArr []RingSignature
-    for i := 0; i < len(privateKeys); i++ {
-		privKey := privateKeys[i]
+    for _, privKey := range privateKeys {
 		// signing function
 		signature, _ /*ctlist*/ := SignAndVerify(ring, privKey, message)
 		signaturesArr = append(signaturesArr, signature)
