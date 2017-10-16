@@ -1,16 +1,16 @@
 package main
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/big"
 	"regexp"
 	"strconv"
 	"strings"
-	"encoding/hex"
-    "log"
 )
 
 type ProcessFlag func(firstarg string, otherargs []string)
@@ -63,18 +63,18 @@ func main() {
 	}
 }
 
-func hexString2Bytes(rawMessage string) ([]byte) {
+func hexString2Bytes(rawMessage string) []byte {
 	var message []byte
-    var err error
+	var err error
 	if rawMessage != "" {
-        message, err = hex.DecodeString(rawMessage)
-        if err == nil {
-            return message
-        }
+		message, err = hex.DecodeString(rawMessage)
+		if err == nil {
+			return message
+		}
 	}
-    // FAIL
-    log.Fatal("Failed to parse the message")
-    return nil
+	// FAIL
+	log.Fatal("Failed to parse the message")
+	return nil
 }
 
 func processGenInputs(firstarg string, otherargs []string) {
@@ -86,26 +86,26 @@ func processGenInputs(firstarg string, otherargs []string) {
 
 	n, _ := strconv.Atoi(firstarg)
 
-    // generate key ring
-    ring, pks,sks := GenerateRandomRing(n)
+	// generate key ring
+	ring, pks, sks := GenerateRandomRing(n)
 
-    // message hexadecimal string to bytes
-    rawMessage := otherargs[0]
-    message := hexString2Bytes(rawMessage)
+	// message hexadecimal string to bytes
+	rawMessage := otherargs[0]
+	message := hexString2Bytes(rawMessage)
 
-    // generate signature and smart contract withdraw and deposit input data
-    signature, _ := ProcessSignature(ring,sks,message)
+	// generate signature and smart contract withdraw and deposit input data
+	signature, _ := ProcessSignature(ring, sks, message)
 
-    // verify signature
-    verif := true
-    for i := 0; i < len(signature); i++ {
-        verif = RingVerif(ring, message, signature[i])
-        if !verif {
-            // FAIL
-            log.Fatal("Failed to verify ring signature")
-            return
-        }
-    }
+	// verify signature
+	verif := true
+	for i := 0; i < len(signature); i++ {
+		verif = RingVerif(ring, message, signature[i])
+		if !verif {
+			// FAIL
+			log.Fatal("Failed to verify ring signature")
+			return
+		}
+	}
 
 	// print result
 	pkJSON, _ := json.MarshalIndent(pks, "  ", "  ")
