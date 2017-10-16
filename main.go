@@ -94,15 +94,6 @@ func processGenInputs(firstarg string, otherargs []string) {
     // generate signature and smart contract withdraw and deposit input data
     signatureArr, _ := ProcessSignature(ring,sks,message)
 
-    // verify signature
-    for _, signature := range signatureArr {
-        if !RingVerif(ring, message, signature) {
-            // FAIL
-            log.Fatal("Failed to verify ring signature")
-            return
-        }
-    }
-
 	// regex just to put numbers between quotes
 	re := regexp.MustCompile("([0-9]+)")
 	// print result
@@ -223,61 +214,3 @@ func processKeygen(firstarg string, otherargs []string) {
 	pksJSON, _ := json.MarshalIndent(pks, "  ", "  ")
     fmt.Printf("{\n  \"private\": %s,\n  \"public\": %s\n}\n", sksJSON,pksJSON)
 }
-/*
-func processKeygen(firstarg string, otherargs []string) {
-
-	var sks []*big.Int
-	var pks []PubKeyStr
-
-	n, _ := strconv.Atoi(firstarg)
-
-	pks, sks = genKeys(n)
-
-	sksJSON, _ := json.MarshalIndent(sks, "", "\t")
-	pksJSON, _ := json.MarshalIndent(pks, "", "\t")
-
-	ioutil.WriteFile(otherargs[0], []byte(string(sksJSON)), 0777)
-	ioutil.WriteFile(otherargs[1], []byte(string(pksJSON)), 0777)
-
-}
-
-func processCreate(firstarg string, otherargs []string) {
-	if len(otherargs) == 3 && strings.HasPrefix(otherargs[2], "0x") {
-		privateKeysFile := firstarg
-		publicKeysFile := otherargs[0]
-		outputFilename := otherargs[1]
-		rawMessage := otherargs[2]
-		stripedPrefixMessage := rawMessage[2:]
-
-		err := create(privateKeysFile, publicKeysFile, outputFilename, stripedPrefixMessage)
-
-		if err != nil {
-			panic(err)
-		}
-	} else {
-		fmt.Println("syntax error")
-	}
-}
-
-func processVerify(firstarg string, otherargs []string) {
-	if len(otherargs) == 3 && strings.HasPrefix(otherargs[2], "0x") {
-		privateKeysFile := firstarg
-		publicKeysFile := otherargs[0]
-		outputFilename := otherargs[1]
-		rawMessage := otherargs[2]
-		stripedPrefixMessage := rawMessage[2:]
-
-		match, err := verify(privateKeysFile, publicKeysFile, outputFilename, stripedPrefixMessage)
-
-		if err != nil {
-			fmt.Println("Somethnig went wrong")
-		} else if match {
-			fmt.Println("Signatures match")
-		} else {
-			fmt.Println("Signatures do not match")
-		}
-	} else {
-		fmt.Println("syntax error")
-	}
-}
-*/
