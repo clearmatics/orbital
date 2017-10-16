@@ -8,7 +8,6 @@ import (
 	"math/big"
 	"regexp"
 	"strconv"
-	"strings"
 	"encoding/hex"
     "log"
 	"io/ioutil"
@@ -28,12 +27,11 @@ type ProcessOption struct {
 	Process ProcessFlag
 }
 
-	//{"genkeys", "g", processKeygen, "genkeys n privkeys.json pubkeys.json"},
-	//{"create", "c", processCreate, "create privkeys.json pubkeys.json output.json HexEncodedString"},
 var subCommands = []CmdOption{
-	{"signature", "c", processGenerateSignature, "signature keys.json HexEncodedString"},
 	{"genkeys", "g", processKeygen, "genkeys n"},
 	{"geninputs", "i", processGenInputs, "geninputs n HexEncodedString"},
+	{"signature", "c", processGenerateSignature, "signature keys.json HexEncodedString"},
+	{"verify", "v", processVerifySignature, "verify ringSignature.json HexEncodedString"},
 }
 
 func createStringFlag(longFlag string, shortFlag string, help string) *string {
@@ -113,8 +111,55 @@ func processGenInputs(firstarg string, otherargs []string) {
 	pkJSON, _ := json.MarshalIndent(pks, "  ", "  ")
 	signatureJSON, _ := json.MarshalIndent(signature, "  ", "  ")
 	signatureJSONStr := re.ReplaceAllString(string(signatureJSON), "\"${1}\"")
-	resultStr := "{\n  \"deposit_input\": " + string(pkJSON) + ",\n  \"withdraw_input\": " + signatureJSONStr + "\n}"
+	resultStr := "{\n  \"ring\": " + string(pkJSON) + ",\n  \"signatures\": " + signatureJSONStr + "\n}"
 	fmt.Printf("%s\n", resultStr)
+}
+
+func processVerifySignature(firstarg string, otherargs []string) {
+    signatureFile := firstarg
+    rawMessage := otherargs[0]
+
+    type SignatureData struct {
+        Ring []CurvePoint `json:"ring"`
+        Signatures []RingSignature `json:"signatures"`
+    }
+
+	signatureFileData, err := ioutil.ReadFile(signatureFile)
+    if err != nil {
+        // FAIL
+        log.Fatal("Failed to parse file: %s", err)
+		//return 
+	}
+    // Integers can't have " to parse
+	re := regexp.MustCompile("(\"([0-9]+)\")")
+	signatureFileDataStr := re.ReplaceAllString(string(signatureFileData), "${2}")
+    // json to golang object
+    var signatureData SignatureData;
+    err = json.Unmarshal([]byte(signatureFileDataStr), &signatureData)
+    if err != nil {
+        // FAIL
+        log.Fatal("Failed to parse file: %s", err)
+		//return 
+	}
+
+    // create ring
+    var ring Ring
+    for _, pubKey := range signatureData.Ring {
+        ring.PubKeys = append(ring.PubKeys, PubKey{pubKey})
+    }
+
+    // message hexadecimal string to bytes
+    message := hexString2Bytes(rawMessage)
+
+    // verify signature
+    for i, signature := range signatureData.Signatures {
+        if !RingVerif(ring, message, signature) {
+            // FAIL
+            log.Fatal("Failed to verify ring signature number " + string(i))
+            return
+        }
+    }
+    fmt.Println("Signatures verified")
 }
 
 func processGenerateSignature(firstarg string, otherargs []string) {
@@ -167,7 +212,7 @@ func processGenerateSignature(firstarg string, otherargs []string) {
 	pkJSON, _ := json.MarshalIndent(keyPair.Public, "  ", "  ")
 	signatureJSON, _ := json.MarshalIndent(signature, "  ", "  ")
 	signatureJSONStr := re.ReplaceAllString(string(signatureJSON), "\"${1}\"")
-	resultStr := "{\n  \"deposit_input\": " + string(pkJSON) + ",\n  \"withdraw_input\": " + signatureJSONStr + "\n}"
+	resultStr := "{\n  \"ring\": " + string(pkJSON) + ",\n  \"signatures\": " + signatureJSONStr + "\n}"
 	fmt.Printf("%s\n", resultStr)
 }
 
@@ -206,7 +251,6 @@ func processKeygen(firstarg string, otherargs []string) {
 	ioutil.WriteFile(otherargs[1], []byte(string(pksJSON)), 0777)
 
 }
-*/
 
 func processCreate(firstarg string, otherargs []string) {
 	if len(otherargs) == 3 && strings.HasPrefix(otherargs[2], "0x") {
@@ -247,3 +291,4 @@ func processVerify(firstarg string, otherargs []string) {
 		fmt.Println("syntax error")
 	}
 }
+*/
