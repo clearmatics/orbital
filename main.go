@@ -164,9 +164,10 @@ func processGenerateSignature(firstarg string, otherargs []string) {
 	// regex just to put numbers between quotes
 	re := regexp.MustCompile("([0-9]+)")
 	// print result
+	pkJSON, _ := json.MarshalIndent(keyPair.Public, "  ", "  ")
 	signatureJSON, _ := json.MarshalIndent(signature, "  ", "  ")
 	signatureJSONStr := re.ReplaceAllString(string(signatureJSON), "\"${1}\"")
-	resultStr := "{\n  \"withdraw_input\": " + signatureJSONStr + "\n}"
+	resultStr := "{\n  \"deposit_input\": " + string(pkJSON) + ",\n  \"withdraw_input\": " + signatureJSONStr + "\n}"
 	fmt.Printf("%s\n", resultStr)
 }
 
@@ -179,9 +180,14 @@ func processKeygen(firstarg string, otherargs []string) {
     // generate key ring
     _, pks,sks = GenerateRandomRing(n)
 
-	sksJSON, _ := json.MarshalIndent(sks, "  ", "  ")
+    // print keys
+    var sksStrArr []string
+    for i := 0; i < len(sks); i++ {
+        sksStrArr = append(sksStrArr,sks[i].String())
+    }
+	sksJSON, _ := json.MarshalIndent(sksStrArr, "  ", "  ")
 	pksJSON, _ := json.MarshalIndent(pks, "  ", "  ")
-    fmt.Printf("{\n  private: %s,\n  public: %s\n}\n", sksJSON,pksJSON)
+    fmt.Printf("{\n  \"private\": %s,\n  \"public\": %s\n}\n", sksJSON,pksJSON)
 }
 /*
 func processKeygen(firstarg string, otherargs []string) {
