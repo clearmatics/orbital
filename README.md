@@ -10,19 +10,19 @@ Generate off-chain data for a Mobius smart contract
 
 Print Ring smart contract random inputs (creates a random keypair and a signature from those)
 
-    `orbital -geninputs n HexEncodedString`
+    orbital -geninputs n HexEncodedString
 
 Print randomly generated keys
 
-    `orbital -genkeys n`
+    orbital -genkeys n
 
 Print signature and public keys ring from keys file
 
-    `orbital -signature keys.json HexEncodedString`
+    orbital -signature keys.json HexEncodedString
 
 Verify signatures
 
-    `orbital -verify signature.json HexEncodedString`
+    orbital -verify signature.json HexEncodedString
 
 Example
 ```
