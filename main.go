@@ -28,13 +28,13 @@ type ProcessOption struct {
 }
 
 type SignatureData struct {
-    Ring       []CurvePoint    `json:"ring"`
-    Signatures []RingSignature `json:"signatures"`
+	Ring       []CurvePoint    `json:"ring"`
+	Signatures []RingSignature `json:"signatures"`
 }
 
 type KeyPair struct {
-    Private []*big.Int   `json:"private"`
-    Public  []CurvePoint `json:"public"`
+	Private []*big.Int   `json:"private"`
+	Public  []CurvePoint `json:"public"`
 }
 
 var subCommands = []CmdOption{

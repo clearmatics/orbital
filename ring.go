@@ -11,12 +11,12 @@ type Ring struct {
 
 func (r Ring) Bytes() []byte {
 	var xbytes, ybytes []byte
-    for _, key := range r.PubKeys {
+	for _, key := range r.PubKeys {
 		xbytes = append(xbytes, key.X.Bytes()...)
 		ybytes = append(ybytes, key.Y.Bytes()...)
-    }
+	}
 
-    return append(xbytes,ybytes...)
+	return append(xbytes, ybytes...)
 }
 
 func (r Ring) String() string {

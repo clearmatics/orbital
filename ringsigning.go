@@ -160,7 +160,7 @@ func RingVerif(R Ring, m []byte, sigma RingSignature) bool {
 		tauc := tau.ScalarMult(cj)            //H(m||R)^(xc)
 		gt = gt.Add(yc)
 		H = H.Add(tauc) // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
-		hashlist = append( hashlist, gt.X, gt.Y, H.X, H.Y)
+		hashlist = append(hashlist, gt.X, gt.Y, H.X, H.Y)
 		csum.Add(csum, cj)
 	}
 	for _, v := range hashlist {
@@ -267,9 +267,9 @@ func ProcessSignature(ring Ring, privateKeys []*big.Int, message []byte) ([]Ring
 	var signaturesArr []RingSignature
 	for _, privKey := range privateKeys {
 		// signing function
-        pub := CurvePoint{}.ScalarBaseMult(privKey)
-        signerNumber := keyCompare(pub, ring)
-        signature := RingSign(ring, privKey, message, signerNumber)
+		pub := CurvePoint{}.ScalarBaseMult(privKey)
+		signerNumber := keyCompare(pub, ring)
+		signature := RingSign(ring, privKey, message, signerNumber)
 
 		signaturesArr = append(signaturesArr, signature)
 	}
