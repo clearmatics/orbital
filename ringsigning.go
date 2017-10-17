@@ -163,7 +163,7 @@ func HashToCurve(s []byte) (CurvePoint, error) {
 	return CurvePoint{}, errors.New("no curve point found")
 }
 
-func genKeys(n int) ([]PubKey, []*big.Int) {
+func GenKeys(n int) ([]PubKey, []*big.Int) {
 
 	var privkeys []*big.Int
 	var pubkeys []PubKey
@@ -181,19 +181,6 @@ func genKeys(n int) ([]PubKey, []*big.Int) {
 
 	return pubkeys, privkeys
 
-}
-
-func GenerateRandomRing(ringSize int) (Ring, []PubKey, []*big.Int) {
-	var sks []*big.Int
-	var pks []PubKey
-
-	// generate keypair (private and public)
-	pks, sks = genKeys(ringSize)
-	// populate ring with keypairs
-	var ring Ring
-	ring.PubKeys = pks
-
-	return ring, pks, sks
 }
 
 func ProcessSignature(ring Ring, privateKeys []*big.Int, message []byte) ([]RingSignature, error) {

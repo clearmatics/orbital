@@ -8,7 +8,9 @@ import (
 func Test_Process_GenInputs(t *testing.T) {
 	// generate key ring
 	n := 4
-	ring, _, sks := GenerateRandomRing(n)
+    pks, sks := GenKeys(n)
+	var ring Ring
+	ring.PubKeys = pks
 
 	// message hexadecimal string to bytes
 	rawMessage := "50b44f86159783db5092ebe77fb4b9cc29e445e54db17f0e8d2bed4eb63126fc"

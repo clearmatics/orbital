@@ -89,16 +89,15 @@ func hexString2Bytes(rawMessage string) []byte {
 }
 
 func processGenInputs(firstarg string, otherargs []string) {
-	var sks []*big.Int
-	var pks []PubKey
-
 	n, err := strconv.Atoi(firstarg)
 	if err != nil {
 		log.Fatal("Failed to parse amount: %s", err)
 	}
 
 	// generate key ring
-	ring, pks, sks := GenerateRandomRing(n)
+    pks, sks := GenKeys(n)
+	var ring Ring
+	ring.PubKeys = pks
 
 	// message hexadecimal string to bytes
 	rawMessage := otherargs[0]
@@ -207,16 +206,13 @@ func processGenerateSignature(firstarg string, otherargs []string) {
 }
 
 func processKeygen(firstarg string, otherargs []string) {
-	var sks []*big.Int
-	var pks []PubKey
-
 	n, err := strconv.Atoi(firstarg)
 	if err != nil {
 		log.Fatal("Failed to parse amount: %s", err)
 	}
 
 	// generate key ring
-	_, pks, sks = GenerateRandomRing(n)
+    pks, sks := GenKeys(n)
 
 	// print keys
 	var sksStrArr []string
