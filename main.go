@@ -27,6 +27,16 @@ type ProcessOption struct {
 	Process ProcessFlag
 }
 
+type SignatureData struct {
+    Ring       []CurvePoint    `json:"ring"`
+    Signatures []RingSignature `json:"signatures"`
+}
+
+type KeyPair struct {
+    Private []*big.Int   `json:"private"`
+    Public  []CurvePoint `json:"public"`
+}
+
 var subCommands = []CmdOption{
 	{"genkeys", "g", processKeygen, "genkeys n"},
 	{"geninputs", "i", processGenInputs, "geninputs n HexEncodedString"},
@@ -114,11 +124,6 @@ func processVerifySignature(firstarg string, otherargs []string) {
 	signatureFile := firstarg
 	rawMessage := otherargs[0]
 
-	type SignatureData struct {
-		Ring       []CurvePoint    `json:"ring"`
-		Signatures []RingSignature `json:"signatures"`
-	}
-
 	signatureFileData, err := ioutil.ReadFile(signatureFile)
 	if err != nil {
 		// FAIL
@@ -160,11 +165,6 @@ func processVerifySignature(firstarg string, otherargs []string) {
 func processGenerateSignature(firstarg string, otherargs []string) {
 	keysFile := firstarg
 	rawMessage := otherargs[0]
-
-	type KeyPair struct {
-		Private []*big.Int   `json:"private"`
-		Public  []CurvePoint `json:"public"`
-	}
 
 	keysFileData, err := ioutil.ReadFile(keysFile)
 	// Integers can't have " to parse

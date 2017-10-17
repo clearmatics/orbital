@@ -3,17 +3,12 @@
 package main
 
 import (
-	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	secp "github.com/btcsuite/btcd/btcec"
 	// "echash" the function we want that comes from here is called HashtoBN and takes a byte slice but actually could be edited to take big.Int?!
 	"encoding/hex"
-	"encoding/json"
 	"errors"
-	"fmt"
-	"io/ioutil"
-	"log"
 	"math/big"
 )
 
@@ -73,34 +68,10 @@ func genKeys(n int) ([]PubKeyStr, []*big.Int) {
 
 }
 
-func SignAndVerify(Rn Ring, privBN *big.Int, message []byte) (RingSignature, []byte) {
-
-	pub := CurvePoint{}.ScalarBaseMult(privBN)
-	signerNumber := keyCompare(pub, Rn)
-
-	signature := RingSign(Rn, privBN, message, signerNumber)
-
-	verif := RingVerif(Rn, message, signature)
-	if verif != true {
-		fmt.Println(signature)
-		log.Fatal("signature failed to verify")
-	}
-
-	var ct []*big.Int
-
-	for i := 0; i < len(signature.Ctlist); i++ {
-		ct = append(ct, signature.Ctlist[i])
-	}
-
-	ctJS, _ := json.MarshalIndent(ct, "", "\t")
-
-	return signature, ctJS
-}
-
 func RingSign(R Ring, ski *big.Int, m []byte, signer int) RingSignature {
 	N := Group.N
 
-	mR := RingToBytes(R)
+	mR := R.Bytes()
 	byteslist := append(mR, m...)
 	hashp, _ := HashToCurve(byteslist)
 	ski.Mod(ski, N)
@@ -139,7 +110,7 @@ func RingSign(R Ring, ski *big.Int, m []byte, signer int) RingSignature {
 			a = CurvePoint{}.ScalarBaseMult(ri)
 			b = hashp.ScalarMult(ri)
 		}
-		hashlist = addtolist(hashlist, a.X, a.Y, b.X, b.Y, j)
+		hashlist = append(hashlist, a.X, a.Y, b.X, b.Y)
 	}
 	for _, v := range hashlist {
 		xx := v.Bytes()
@@ -173,7 +144,7 @@ func RingVerif(R Ring, m []byte, sigma RingSignature) bool {
 	N := Group.N
 	var hashlist []*big.Int
 
-	mR := RingToBytes(R)
+	mR := R.Bytes()
 	byteslist := append(mR, m...)
 	hashp, _ := HashToCurve(byteslist)
 	csum := big.NewInt(0)
@@ -189,7 +160,7 @@ func RingVerif(R Ring, m []byte, sigma RingSignature) bool {
 		tauc := tau.ScalarMult(cj)            //H(m||R)^(xc)
 		gt = gt.Add(yc)
 		H = H.Add(tauc) // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
-		hashlist = addtolist(hashlist, gt.X, gt.Y, H.X, H.Y, j)
+		hashlist = append( hashlist, gt.X, gt.Y, H.X, H.Y)
 		csum.Add(csum, cj)
 	}
 	for _, v := range hashlist {
@@ -223,26 +194,6 @@ func convertPubKeys(rn RingStr) Ring {
 		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{pubkeyx, pubkeyy}})
 	}
 	return ring
-}
-
-func RingToBytes(rn Ring) []byte {
-	var rbytes []byte
-	for i := 0; i < len(rn.PubKeys); i++ {
-		rbytes = append(rbytes, rn.PubKeys[i].X.Bytes()...)
-	}
-	for i := 0; i < len(rn.PubKeys); i++ {
-		rbytes = append(rbytes, rn.PubKeys[i].Y.Bytes()...)
-	}
-
-	return rbytes
-}
-
-func addtolist(list []*big.Int, a *big.Int, b *big.Int, c *big.Int, d *big.Int, j int) []*big.Int {
-	list = append(list, a)
-	list = append(list, b)
-	list = append(list, c)
-	list = append(list, d)
-	return list
 }
 
 func keyCompare(pub CurvePoint, R Ring) int {
@@ -289,32 +240,6 @@ func HashToCurve(s []byte) (CurvePoint, error) {
 	return CurvePoint{}, errors.New("no curve point found")
 }
 
-func create(privateKeysFile string, publicKeysFile string, outputFilename string, rawMessage string) error {
-	outputBuffer, err := Process(privateKeysFile, publicKeysFile, rawMessage)
-
-	if err != nil {
-		return err
-	}
-
-	return ioutil.WriteFile(outputFilename, outputBuffer, 0777)
-}
-
-func verify(privateKeysFile string, publicKeysFile string, outputFilename string, rawMessage string) (bool, error) {
-	outputBuffer, err := Process(privateKeysFile, publicKeysFile, rawMessage)
-
-	if err != nil {
-		return false, err
-	}
-
-	var compareBuffer []byte
-	compareBuffer, err = ioutil.ReadFile(outputFilename)
-	if err != nil {
-		return false, err
-	}
-
-	return bytes.Equal(outputBuffer, compareBuffer), nil
-}
-
 func GenerateRandomRing(ringSize int) (Ring, []PubKeyStr, []*big.Int) {
 	var sks []*big.Int
 	var pks []PubKeyStr
@@ -342,50 +267,11 @@ func ProcessSignature(ring Ring, privateKeys []*big.Int, message []byte) ([]Ring
 	var signaturesArr []RingSignature
 	for _, privKey := range privateKeys {
 		// signing function
-		signature, _ /*ctlist*/ := SignAndVerify(ring, privKey, message)
+        pub := CurvePoint{}.ScalarBaseMult(privKey)
+        signerNumber := keyCompare(pub, ring)
+        signature := RingSign(ring, privKey, message, signerNumber)
+
 		signaturesArr = append(signaturesArr, signature)
 	}
 	return signaturesArr, nil
-}
-
-func Process(privateKeysFile string, publicKeysFile string, rawMessage string) ([]byte, error) {
-	privkeyfile, err := ioutil.ReadFile(privateKeysFile)
-	pk := PrivKeysStr{}
-	if err = json.Unmarshal(privkeyfile, &pk); err != nil {
-		return nil, err
-	}
-
-	keyfile, _ := ioutil.ReadFile(publicKeysFile)
-	rn := RingStr{}
-	if err = json.Unmarshal(keyfile, &rn); err != nil {
-		return nil, err
-	}
-	Rn := convertPubKeys(rn)
-
-	var message []byte
-	if rawMessage != "" {
-		message, err = hex.DecodeString(rawMessage)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	var outputBuffer []byte
-
-	for i := 0; i < len(pk.Keys); i++ {
-		privbytes, err := hex.DecodeString(pk.Keys[i])
-		if err != nil {
-			return nil, err
-		}
-		privBN := new(big.Int).SetBytes(privbytes)
-
-		signature, ctList := SignAndVerify(Rn, privBN, message)
-		outputBuffer = append(outputBuffer, []byte(fmt.Sprintln("["))...)
-		outputBuffer = append(outputBuffer, []byte(fmt.Sprintf("\t%s,\n", signature.Tau.X))...)
-		outputBuffer = append(outputBuffer, []byte(fmt.Sprintf("\t%s,\n", signature.Tau.Y))...)
-		outputBuffer = append(outputBuffer, []byte(fmt.Sprintf("%s\n", string(ctList)))...)
-		outputBuffer = append(outputBuffer, []byte(fmt.Sprintln("],"))...)
-	}
-
-	return outputBuffer, nil
 }
