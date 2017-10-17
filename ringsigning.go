@@ -13,10 +13,6 @@ import (
 
 var Group *secp.KoblitzCurve
 
-type PubKey struct {
-	CurvePoint
-}
-
 func check(e error) {
 	if e != nil {
 		panic(e)

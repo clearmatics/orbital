@@ -9,7 +9,7 @@ func TestRingString(t *testing.T) {
 		PubKeys: make([]PubKey, 1),
 	}
 	actual := r.String()
-	expected := "X: <nil>, Y: <nil>\n"
+	expected := "{ \"x\": \"<nil>\", \"y\": \"<nil>\" }\n"
 	if actual != expected {
 		t.Errorf("Expected %v but got %v", expected, actual)
 	}

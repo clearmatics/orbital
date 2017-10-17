@@ -5,6 +5,16 @@ import (
 	"fmt"
 )
 
+type PubKey struct {
+	CurvePoint
+}
+
+func (p PubKey) String() string {
+	var buffer bytes.Buffer
+	buffer.WriteString(fmt.Sprintf("{ \"x\": \"%s\", \"y\": \"%s\" }", p.CurvePoint.X, p.CurvePoint.Y))
+	return buffer.String()
+}
+
 type Ring struct {
 	PubKeys []PubKey `json:"pubkeys"`
 }
