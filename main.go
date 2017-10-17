@@ -64,18 +64,18 @@ func main() {
 	}
 }
 
-func hexString2Bytes(rawMessage string) ([]byte) {
+func hexString2Bytes(rawMessage string) []byte {
 	var message []byte
-    var err error
+	var err error
 	if rawMessage != "" {
-        message, err = hex.DecodeString(rawMessage)
-        if err == nil {
-            return message
-        }
+		message, err = hex.DecodeString(rawMessage)
+		if err == nil {
+			return message
+		}
 	}
-    // FAIL
-    log.Fatal("Failed to parse the message")
-    return nil
+	// FAIL
+	log.Fatal("Failed to parse the message")
+	return nil
 }
 
 func processGenInputs(firstarg string, otherargs []string) {
