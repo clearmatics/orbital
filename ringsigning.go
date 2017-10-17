@@ -338,9 +338,9 @@ func GenerateRandomRing(ringSize int) (Ring, []PubKeyStr, []*big.Int) {
 
 func ProcessSignature(ring Ring, privateKeys []*big.Int, message []byte) ([]RingSignature, error) {
 
-    // generate signature
-    var signaturesArr []RingSignature
-    for _, privKey := range privateKeys {
+	// generate signature
+	var signaturesArr []RingSignature
+	for _, privKey := range privateKeys {
 		// signing function
 		signature, _ /*ctlist*/ := SignAndVerify(ring, privKey, message)
 		signaturesArr = append(signaturesArr, signature)

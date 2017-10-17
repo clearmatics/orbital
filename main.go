@@ -5,12 +5,12 @@ import (
 	"flag"
 	"fmt"
 	//"io/ioutil"
+	"encoding/hex"
+	"io/ioutil"
+	"log"
 	"math/big"
 	"regexp"
 	"strconv"
-	"encoding/hex"
-    "log"
-	"io/ioutil"
 )
 
 type ProcessFlag func(firstarg string, otherargs []string)
@@ -82,17 +82,23 @@ func processGenInputs(firstarg string, otherargs []string) {
 	var sks []*big.Int
 	var pks []PubKeyStr
 
-	n, _ := strconv.Atoi(firstarg)
+	n, err := strconv.Atoi(firstarg)
+	if err != nil {
+		log.Fatal("Failed to parse amount: %s", err)
+	}
 
-    // generate key ring
-    ring, pks,sks := GenerateRandomRing(n)
+	// generate key ring
+	ring, pks, sks := GenerateRandomRing(n)
 
-    // message hexadecimal string to bytes
-    rawMessage := otherargs[0]
-    message := hexString2Bytes(rawMessage)
+	// message hexadecimal string to bytes
+	rawMessage := otherargs[0]
+	message := hexString2Bytes(rawMessage)
 
-    // generate signature and smart contract withdraw and deposit input data
-    signatureArr, _ := ProcessSignature(ring,sks,message)
+	// generate signature and smart contract withdraw and deposit input data
+	signatureArr, err := ProcessSignature(ring, sks, message)
+	if err != nil {
+		log.Fatal("Failed to create the signature: %s", err)
+	}
 
 	// regex just to put numbers between quotes
 	re := regexp.MustCompile("([0-9]+)")
@@ -105,86 +111,89 @@ func processGenInputs(firstarg string, otherargs []string) {
 }
 
 func processVerifySignature(firstarg string, otherargs []string) {
-    signatureFile := firstarg
-    rawMessage := otherargs[0]
+	signatureFile := firstarg
+	rawMessage := otherargs[0]
 
-    type SignatureData struct {
-        Ring []CurvePoint `json:"ring"`
-        Signatures []RingSignature `json:"signatures"`
-    }
+	type SignatureData struct {
+		Ring       []CurvePoint    `json:"ring"`
+		Signatures []RingSignature `json:"signatures"`
+	}
 
 	signatureFileData, err := ioutil.ReadFile(signatureFile)
-    if err != nil {
-        // FAIL
-        log.Fatal("Failed to parse file: %s", err)
-		//return 
+	if err != nil {
+		// FAIL
+		log.Fatal("Failed to parse file: %s", err)
+		//return
 	}
-    // Integers can't have " to parse
+	// Integers can't have " to parse
 	re := regexp.MustCompile("(\"([0-9]+)\")")
 	signatureFileDataStr := re.ReplaceAllString(string(signatureFileData), "${2}")
-    // json to golang object
-    var signatureData SignatureData;
-    err = json.Unmarshal([]byte(signatureFileDataStr), &signatureData)
-    if err != nil {
-        // FAIL
-        log.Fatal("Failed to parse file: %s", err)
-		//return 
+	// json to golang object
+	var signatureData SignatureData
+	err = json.Unmarshal([]byte(signatureFileDataStr), &signatureData)
+	if err != nil {
+		// FAIL
+		log.Fatal("Failed to parse file: %s", err)
+		//return
 	}
 
-    // create ring
-    var ring Ring
-    for _, pubKey := range signatureData.Ring {
-        ring.PubKeys = append(ring.PubKeys, PubKey{pubKey})
-    }
+	// create ring
+	var ring Ring
+	for _, pubKey := range signatureData.Ring {
+		ring.PubKeys = append(ring.PubKeys, PubKey{pubKey})
+	}
 
-    // message hexadecimal string to bytes
-    message := hexString2Bytes(rawMessage)
+	// message hexadecimal string to bytes
+	message := hexString2Bytes(rawMessage)
 
-    // verify signature
-    for i, signature := range signatureData.Signatures {
-        if !RingVerif(ring, message, signature) {
-            // FAIL
-            log.Fatal("Failed to verify ring signature number " + string(i))
-            return
-        }
-    }
-    fmt.Println("Signatures verified")
+	// verify signature
+	for i, signature := range signatureData.Signatures {
+		if !RingVerif(ring, message, signature) {
+			// FAIL
+			log.Fatal("Failed to verify ring signature number " + string(i))
+			return
+		}
+	}
+	fmt.Println("Signatures verified")
 }
 
 func processGenerateSignature(firstarg string, otherargs []string) {
-    keysFile := firstarg
-    rawMessage := otherargs[0]
+	keysFile := firstarg
+	rawMessage := otherargs[0]
 
-    type KeyPair struct {
-        Private []*big.Int `json:"private"`
-        Public []CurvePoint `json:"public"`
-    }
+	type KeyPair struct {
+		Private []*big.Int   `json:"private"`
+		Public  []CurvePoint `json:"public"`
+	}
 
 	keysFileData, err := ioutil.ReadFile(keysFile)
-    // Integers can't have " to parse
+	// Integers can't have " to parse
 	re := regexp.MustCompile("(\"([0-9]+)\")")
 	keysFileDataStr := re.ReplaceAllString(string(keysFileData), "${2}")
 
-    var keyPair KeyPair;
-    err = json.Unmarshal([]byte(keysFileDataStr), &keyPair)
-    if err != nil {
-        // FAIL
-        log.Fatal("Failed to parse file: %s", err)
-		//return 
+	var keyPair KeyPair
+	err = json.Unmarshal([]byte(keysFileDataStr), &keyPair)
+	if err != nil {
+		// FAIL
+		log.Fatal("Failed to parse file: %s", err)
+		//return
 	}
 
-    // message hexadecimal string to bytes
-    message := hexString2Bytes(rawMessage)
+	// message hexadecimal string to bytes
+	message := hexString2Bytes(rawMessage)
 
-    sks := keyPair.Private
-    // create ring
-    var ring Ring
-    for _, pubKey := range keyPair.Public {
-        ring.PubKeys = append(ring.PubKeys, PubKey{pubKey})
-    }
+	sks := keyPair.Private
+	// create ring
+	var ring Ring
+	for _, pubKey := range keyPair.Public {
+		ring.PubKeys = append(ring.PubKeys, PubKey{pubKey})
+	}
 
-    // generate signature
-    signature, _ := ProcessSignature(ring,sks,message)
+	// generate signature
+	signature, err := ProcessSignature(ring, sks, message)
+	if err != nil {
+		log.Fatal("Failed to create the signature: %s", err)
+	}
 
 	// regex just to put numbers between quotes
 	re = regexp.MustCompile("([0-9]+)")
@@ -200,17 +209,20 @@ func processKeygen(firstarg string, otherargs []string) {
 	var sks []*big.Int
 	var pks []PubKeyStr
 
-	n, _ := strconv.Atoi(firstarg)
+	n, err := strconv.Atoi(firstarg)
+	if err != nil {
+		log.Fatal("Failed to parse amount: %s", err)
+	}
 
-    // generate key ring
-    _, pks,sks = GenerateRandomRing(n)
+	// generate key ring
+	_, pks, sks = GenerateRandomRing(n)
 
-    // print keys
-    var sksStrArr []string
-    for _, privateKey := range sks {
-        sksStrArr = append(sksStrArr,privateKey.String())
-    }
+	// print keys
+	var sksStrArr []string
+	for _, privateKey := range sks {
+		sksStrArr = append(sksStrArr, privateKey.String())
+	}
 	sksJSON, _ := json.MarshalIndent(sksStrArr, "  ", "  ")
 	pksJSON, _ := json.MarshalIndent(pks, "  ", "  ")
-    fmt.Printf("{\n  \"private\": %s,\n  \"public\": %s\n}\n", sksJSON,pksJSON)
+	fmt.Printf("{\n  \"private\": %s,\n  \"public\": %s\n}\n", sksJSON, pksJSON)
 }
