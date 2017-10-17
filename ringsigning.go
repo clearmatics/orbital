@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	secp "github.com/btcsuite/btcd/btcec"
 	// "echash" the function we want that comes from here is called HashtoBN and takes a byte slice but actually could be edited to take big.Int?!
-	"encoding/hex"
 	"errors"
 	"math/big"
 )
@@ -17,10 +16,6 @@ var Group *secp.KoblitzCurve
 type PubKeyStr struct {
 	X string `json:"x"`
 	Y string `json:"y"`
-}
-
-type RingStr struct {
-	PubKeys []PubKeyStr `json:"pubkeys"`
 }
 
 type PrivKeysStr struct {
@@ -177,23 +172,6 @@ func RingVerif(R Ring, m []byte, sigma RingSignature) bool {
 		return true
 	}
 	return false
-}
-
-func convertPubKeys(rn RingStr) Ring {
-
-	rl := len(rn.PubKeys)
-	var ring Ring
-
-	for i := 0; i < rl; i++ {
-		var bytesx []byte
-		var bytesy []byte
-		bytesx, _ = hex.DecodeString(string(rn.PubKeys[i].X))
-		bytesy, _ = hex.DecodeString(string(rn.PubKeys[i].Y))
-		pubkeyx := new(big.Int).SetBytes(bytesx) // This makes big int
-		pubkeyy := new(big.Int).SetBytes(bytesy) // So we can do EC arithmetic
-		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{pubkeyx, pubkeyy}})
-	}
-	return ring
 }
 
 func keyCompare(pub CurvePoint, R Ring) int {
