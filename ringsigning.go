@@ -18,18 +18,8 @@ type PubKeyStr struct {
 	Y string `json:"y"`
 }
 
-type PrivKeysStr struct {
-	Keys []string `json:"privkeys"`
-}
-
 type PubKey struct {
 	CurvePoint
-}
-
-type ContractJSON struct {
-	keys   []*big.Int
-	tau    []*big.Int
-	ctlist []*big.Int
 }
 
 func check(e error) {
@@ -113,7 +103,7 @@ func RingSign(R Ring, ski *big.Int, m []byte, signer int) RingSignature {
 	}
 
 	hasha := sha256.Sum256(byteslist)
-	hashb := Convert(hasha[:])
+    hashb := new(big.Int).SetBytes(hasha[:])
 	hashb.Mod(hashb, N)
 	csum.Mod(csum, N)
 	c := new(big.Int).Sub(hashb, csum)
@@ -164,7 +154,7 @@ func RingVerif(R Ring, m []byte, sigma RingSignature) bool {
 	}
 
 	hash := sha256.Sum256(byteslist)
-	hashhash := Convert(hash[:])
+    hashhash := new(big.Int).SetBytes(hash[:])
 
 	hashhash.Mod(hashhash, N)
 	csum.Mod(csum, N)
@@ -172,22 +162,6 @@ func RingVerif(R Ring, m []byte, sigma RingSignature) bool {
 		return true
 	}
 	return false
-}
-
-func keyCompare(pub CurvePoint, R Ring) int {
-	j := 0
-	for i := 0; i < len(R.PubKeys); i++ {
-		if pub.X.Cmp(R.PubKeys[i].X) == 0 && pub.Y.Cmp(R.PubKeys[i].Y) == 0 {
-			j = i
-		}
-	}
-	return j
-}
-
-func Convert(data []byte) *big.Int {
-	z := new(big.Int)
-	z.SetBytes(data)
-	return z
 }
 
 func HashToCurve(s []byte) (CurvePoint, error) {
@@ -199,7 +173,7 @@ func HashToCurve(s []byte) (CurvePoint, error) {
 	z.SetString("57896044618658097711785492504343953926634992332820282019728792003954417335832", 10)
 
 	array := sha256.Sum256(s) // Sum outputs an array of 32 bytes :)
-	x = Convert(array[:])
+    x = new(big.Int).SetBytes(array[:])
 	for true {
 		xcube := new(big.Int).Exp(x, big.NewInt(3), q)
 		xcube7 := new(big.Int).Add(xcube, big.NewInt(7))
@@ -252,4 +226,14 @@ func ProcessSignature(ring Ring, privateKeys []*big.Int, message []byte) ([]Ring
 		signaturesArr = append(signaturesArr, signature)
 	}
 	return signaturesArr, nil
+}
+
+func keyCompare(pub CurvePoint, R Ring) int {
+	j := 0
+    for i, rKey := range R.PubKeys {
+        if pub.X.Cmp(rKey.X) == 0 && pub.Y.Cmp(rKey.Y) == 0 {
+            j = i
+        }
+    }
+	return j
 }
