@@ -11,7 +11,7 @@ type PubKey struct {
 
 func (p PubKey) String() string {
 	var buffer bytes.Buffer
-    buffer.WriteString(fmt.Sprintf("{ \"x\": \"%s\", \"y\": \"%s\" }", p.CurvePoint.X, p.CurvePoint.Y))
+	buffer.WriteString(fmt.Sprintf("{ \"x\": \"%s\", \"y\": \"%s\" }", p.CurvePoint.X, p.CurvePoint.Y))
 	return buffer.String()
 }
 
