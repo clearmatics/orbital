@@ -195,7 +195,7 @@ func GenerateRandomRing(ringSize int) (Ring, []PubKey, []*big.Int) {
 	pks, sks = genKeys(ringSize)
 	// populate ring with keypairs
 	var ring Ring
-    ring.PubKeys = pks
+	ring.PubKeys = pks
 
 	return ring, pks, sks
 }

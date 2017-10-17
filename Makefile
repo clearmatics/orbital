@@ -9,7 +9,7 @@ test:
 	@go test ./...
 
 format:
-	@gofmt -s -w .
+	@gofmt -s -w ${GOFILES_NOVENDOR}
 
 coverage:
 	go test -coverprofile=coverage.out 

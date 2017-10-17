@@ -224,7 +224,7 @@ func processKeygen(firstarg string, otherargs []string) {
 		sksStrArr = append(sksStrArr, privateKey.String())
 	}
 	// regex just to put numbers between quotes
-    re := regexp.MustCompile("([0-9]+)")
+	re := regexp.MustCompile("([0-9]+)")
 	sksJSON, _ := json.MarshalIndent(sksStrArr, "  ", "  ")
 	pksJSON, _ := json.MarshalIndent(pks, "  ", "  ")
 	pksJSONStr := re.ReplaceAllString(string(pksJSON), "\"${1}\"")
