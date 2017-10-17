@@ -90,7 +90,7 @@ func hexString2Bytes(rawMessage string) []byte {
 
 func processGenInputs(firstarg string, otherargs []string) {
 	var sks []*big.Int
-	var pks []PubKeyStr
+	var pks []PubKey
 
 	n, err := strconv.Atoi(firstarg)
 	if err != nil {
@@ -199,15 +199,16 @@ func processGenerateSignature(firstarg string, otherargs []string) {
 	re = regexp.MustCompile("([0-9]+)")
 	// print result
 	pkJSON, _ := json.MarshalIndent(keyPair.Public, "  ", "  ")
+	pksJSONStr := re.ReplaceAllString(string(pkJSON), "\"${1}\"")
 	signatureJSON, _ := json.MarshalIndent(signature, "  ", "  ")
 	signatureJSONStr := re.ReplaceAllString(string(signatureJSON), "\"${1}\"")
-	resultStr := "{\n  \"ring\": " + string(pkJSON) + ",\n  \"signatures\": " + signatureJSONStr + "\n}"
+	resultStr := "{\n  \"ring\": " + string(pksJSONStr) + ",\n  \"signatures\": " + signatureJSONStr + "\n}"
 	fmt.Printf("%s\n", resultStr)
 }
 
 func processKeygen(firstarg string, otherargs []string) {
 	var sks []*big.Int
-	var pks []PubKeyStr
+	var pks []PubKey
 
 	n, err := strconv.Atoi(firstarg)
 	if err != nil {
@@ -222,7 +223,10 @@ func processKeygen(firstarg string, otherargs []string) {
 	for _, privateKey := range sks {
 		sksStrArr = append(sksStrArr, privateKey.String())
 	}
+	// regex just to put numbers between quotes
+    re := regexp.MustCompile("([0-9]+)")
 	sksJSON, _ := json.MarshalIndent(sksStrArr, "  ", "  ")
 	pksJSON, _ := json.MarshalIndent(pks, "  ", "  ")
-	fmt.Printf("{\n  \"private\": %s,\n  \"public\": %s\n}\n", sksJSON, pksJSON)
+	pksJSONStr := re.ReplaceAllString(string(pksJSON), "\"${1}\"")
+	fmt.Printf("{\n  \"private\": %s,\n  \"public\": %s\n}\n", sksJSON, pksJSONStr)
 }

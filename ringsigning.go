@@ -13,11 +13,6 @@ import (
 
 var Group *secp.KoblitzCurve
 
-type PubKeyStr struct {
-	X string `json:"x"`
-	Y string `json:"y"`
-}
-
 type PubKey struct {
 	CurvePoint
 }
@@ -31,26 +26,6 @@ func check(e error) {
 func init() {
 
 	Group = secp.S256()
-}
-
-func genKeys(n int) ([]PubKeyStr, []*big.Int) {
-
-	var privkeys []*big.Int
-	var pubkeys []PubKeyStr
-
-	q := Group.P
-
-	for i := 0; i < n; i++ {
-		priv, _ := rand.Int(rand.Reader, q)
-		privkeys = append(privkeys, priv)
-
-		p := CurvePoint{}.ScalarBaseMult(priv)
-
-		pubkeys = append(pubkeys, PubKeyStr{p.X.String(), p.Y.String()})
-	}
-
-	return pubkeys, privkeys
-
 }
 
 func RingSign(R Ring, ski *big.Int, m []byte, signer int) RingSignature {
@@ -192,23 +167,35 @@ func HashToCurve(s []byte) (CurvePoint, error) {
 	return CurvePoint{}, errors.New("no curve point found")
 }
 
-func GenerateRandomRing(ringSize int) (Ring, []PubKeyStr, []*big.Int) {
+func genKeys(n int) ([]PubKey, []*big.Int) {
+
+	var privkeys []*big.Int
+	var pubkeys []PubKey
+
+	q := Group.P
+
+	for i := 0; i < n; i++ {
+		priv, _ := rand.Int(rand.Reader, q)
+		privkeys = append(privkeys, priv)
+
+		p := CurvePoint{}.ScalarBaseMult(priv)
+
+		pubkeys = append(pubkeys, PubKey{p})
+	}
+
+	return pubkeys, privkeys
+
+}
+
+func GenerateRandomRing(ringSize int) (Ring, []PubKey, []*big.Int) {
 	var sks []*big.Int
-	var pks []PubKeyStr
+	var pks []PubKey
+
 	// generate keypair (private and public)
 	pks, sks = genKeys(ringSize)
 	// populate ring with keypairs
 	var ring Ring
-	for i := 0; i < len(pks); i++ {
-		// type cast to the rign struct
-		xPub := new(big.Int)
-		xPub.SetString(pks[i].X, 10)
-		yPub := new(big.Int)
-		yPub.SetString(pks[i].Y, 10)
-
-		// fills the key ring
-		ring.PubKeys = append(ring.PubKeys, PubKey{CurvePoint{xPub, yPub}})
-	}
+    ring.PubKeys = pks
 
 	return ring, pks, sks
 }
