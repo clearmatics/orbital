@@ -95,7 +95,7 @@ func processGenInputs(firstarg string, otherargs []string) {
 	}
 
 	// generate key ring
-    pks, sks := GenKeys(n)
+	pks, sks := GenKeys(n)
 	var ring Ring
 	ring.PubKeys = pks
 
@@ -212,7 +212,7 @@ func processKeygen(firstarg string, otherargs []string) {
 	}
 
 	// generate key ring
-    pks, sks := GenKeys(n)
+	pks, sks := GenKeys(n)
 
 	// print keys
 	var sksStrArr []string

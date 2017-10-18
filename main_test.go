@@ -8,7 +8,7 @@ import (
 func Test_Process_GenInputs(t *testing.T) {
 	// generate key ring
 	n := 4
-    pks, sks := GenKeys(n)
+	pks, sks := GenKeys(n)
 	var ring Ring
 	ring.PubKeys = pks
 
