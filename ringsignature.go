@@ -15,6 +15,7 @@ type RingSignature struct {
 	Ctlist []*big.Int `json:"ctlist"`
 }
 
+// This should be a struct to JSON
 func (s RingSignature) String() string {
 	var buffer bytes.Buffer
 

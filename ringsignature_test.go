@@ -19,3 +19,11 @@ func TestRingSignatureString(t *testing.T) {
 		t.Errorf("Expected %v but got %v", expected, actual)
 	}
 }
+
+/*
+func TestNexRingSignature(t *testing.T) {
+	r := &Ring{}
+	r.Generate(2)
+	NewRingSignature(*r, r.PrivKeys[1], []byte("foo"), 1)
+}
+*/
