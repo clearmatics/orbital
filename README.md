@@ -1,6 +1,6 @@
 # Orbital
 
-Orbital is a command-line tool to generate off-chain data required by Möbius, a smart contract that offers trustless tumbling for transaction privacy.
+Orbital is a command-line tool to generate off-chain data required by [Möbius][3], a smart contract that offers trustless tumbling for transaction privacy.
 
 ## Installation
 
@@ -91,3 +91,4 @@ The project follows standard go conventions using `gofmt`. If you wish to contri
 
 [1]: https://github.com/golang/dep
 [2]: https://github.com/golang/dep/blob/master/README.md
+[3]: https://gitlab.clearmatics.com/oss/mobius
