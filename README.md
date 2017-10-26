@@ -59,7 +59,7 @@ This generates JSON containing complete data required to deposit and withdraw. I
 
 Beyond evaluation it is likely that you will want to first generate public/private keypairs and distribute this to allow signatures to be created separately. To create a public/private keypairs for a ring size of `2` use 
     
-    oribtal -genkeys -2
+    orbital -genkeys 2
 
 To print signatures and public keys ring from keys file
 
@@ -85,9 +85,9 @@ or
 
 ## Development
 
-Dependencies are managed via [dep][1]. Dependencies are checked into this repository in the `vendor` folder. Documentation for managing dependencies is available on the [dep README][2].
+Dependencies are managed via [dep][1]. Dependencies are checked into this repository in the `vendor` folder. Documentation for managing dependencies is available in the [dep README][2].
 
-The project follows standard go conventions using `gofmt`. If you wish to contribute to the project please follow standard Go conventions. The CI server automatically runs these checks.
+The project follows standard Go conventions using `gofmt`. If you wish to contribute to the project please follow standard Go conventions. The CI server automatically runs these checks.
 
 [1]: https://github.com/golang/dep
 [2]: https://github.com/golang/dep/blob/master/README.md

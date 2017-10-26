@@ -46,7 +46,7 @@ func RingSign(R Ring, ski *big.Int, m []byte, signer int) RingSignature {
 		if j != signer {
 			cj, e := rand.Int(rand.Reader, N) // this returns *big.Int
 			check(e)
-			tj, e := rand.Int(rand.Reader, N) // this returns *big.Int tooo
+			tj, e := rand.Int(rand.Reader, N) // this returns *big.Int too
 			check(e)
 
 			a = R.PubKeys[j].ParameterPointAdd(tj, cj)
