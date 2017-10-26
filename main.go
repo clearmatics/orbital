@@ -113,9 +113,10 @@ func processGenInputs(firstarg string, otherargs []string) {
 	re := regexp.MustCompile("([0-9]+)")
 	// print result
 	pkJSON, _ := json.MarshalIndent(pks, "  ", "  ")
+	pkJSONStr := re.ReplaceAllString(string(pkJSON), "\"${1}\"")
 	signatureJSON, _ := json.MarshalIndent(signatureArr, "  ", "  ")
 	signatureJSONStr := re.ReplaceAllString(string(signatureJSON), "\"${1}\"")
-	resultStr := "{\n  \"ring\": " + string(pkJSON) + ",\n  \"signatures\": " + signatureJSONStr + "\n}"
+	resultStr := "{\n  \"ring\": " + string(pkJSONStr) + ",\n  \"signatures\": " + signatureJSONStr + "\n}"
 	fmt.Printf("%s\n", resultStr)
 }
 
