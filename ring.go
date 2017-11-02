@@ -12,25 +12,26 @@ import (
 	"math/big"
 )
 
-var Group *secp.KoblitzCurve
+var group *secp.KoblitzCurve
 
+// A Ring is a number of public/private key pairs
 type Ring struct {
 	PubKeys  []CurvePoint `json:"pubkeys"`
 	PrivKeys []*big.Int   `json:"privkeys"`
 }
 
 func init() {
-	Group = secp.S256()
+	group = secp.S256()
 }
 
-func Convert(data []byte) *big.Int {
+func convert(data []byte) *big.Int {
 	z := new(big.Int)
 	z.SetBytes(data)
 	return z
 }
 
-func HashToCurve(s []byte) (CurvePoint, error) {
-	q := Group.P
+func hashToCurve(s []byte) (CurvePoint, error) {
+	q := group.P
 
 	x := big.NewInt(0)
 	y := big.NewInt(0)
@@ -38,7 +39,7 @@ func HashToCurve(s []byte) (CurvePoint, error) {
 	z.SetString("57896044618658097711785492504343953926634992332820282019728792003954417335832", 10)
 
 	array := sha256.Sum256(s) // Sum outputs an array of 32 bytes :)
-	x = Convert(array[:])
+	x = convert(array[:])
 	for true {
 		xcube := new(big.Int).Exp(x, big.NewInt(3), q)
 		xcube7 := new(big.Int).Add(xcube, big.NewInt(7))
@@ -48,7 +49,7 @@ func HashToCurve(s []byte) (CurvePoint, error) {
 		y.Rsh(y, 2)
 		y.Exp(xcube7, y, q)
 		z = z.Exp(y, big.NewInt(2), q)
-		curveout := Group.IsOnCurve(x, y)
+		curveout := group.IsOnCurve(x, y)
 		if curveout == true {
 			return CurvePoint{x, y}, nil
 		}
@@ -74,7 +75,7 @@ func (r Ring) Bytes() []byte {
 // Generate creates public and private keypairs for a ring with the size of n
 func (r *Ring) Generate(n int) error {
 
-	q := Group.P
+	q := group.P
 
 	for i := 0; i < n; i++ {
 		priv, err := rand.Int(rand.Reader, q)
@@ -103,12 +104,12 @@ func (r *Ring) PubKeyIndex(pk CurvePoint) int {
 }
 
 // Signature generates a signature
-func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignature, error) {
-	N := Group.N
+func (r *Ring) signature(pk *big.Int, message []byte, signer int) (*RingSignature, error) {
+	N := group.N
 
 	mR := r.Bytes()
 	byteslist := append(mR, message...)
-	hashp, _ := HashToCurve(byteslist)
+	hashp, _ := hashToCurve(byteslist)
 	pk.Mod(pk, N)
 	hashSP := hashp.ScalarMult(pk)
 
@@ -175,6 +176,7 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 	return &RingSignature{hashSP, ctlist}, nil
 }
 
+// Signatures generates a signature given a message
 func (r *Ring) Signatures(message []byte) ([]RingSignature, error) {
 
 	var signaturesArr []RingSignature
@@ -183,7 +185,7 @@ func (r *Ring) Signatures(message []byte) ([]RingSignature, error) {
 		//pub := CurvePoint{}.ScalarBaseMult(privKey)
 		pub := r.PubKeys[i]
 		signerNumber := r.PubKeyIndex(pub)
-		signature, err := r.Signature(privKey, message, signerNumber)
+		signature, err := r.signature(privKey, message, signerNumber)
 		if err != nil {
 			return nil, err
 		}
@@ -193,6 +195,7 @@ func (r *Ring) Signatures(message []byte) ([]RingSignature, error) {
 	return signaturesArr, nil
 }
 
+// VerifySignature verifys a signature given a message
 func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 	// ring verification
 	// assumes R = pk1, pk2, ..., pkn
@@ -200,12 +203,12 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 	tau := sigma.Tau
 	ctlist := sigma.Ctlist
 	n := len(r.PubKeys)
-	N := Group.N
+	N := group.N
 	var hashlist []*big.Int
 
 	mR := r.Bytes()
 	byteslist := append(mR, message...)
-	hashp, _ := HashToCurve(byteslist)
+	hashp, _ := hashToCurve(byteslist)
 	csum := big.NewInt(0)
 
 	for j := 0; j < n; j++ {
