@@ -1,6 +1,6 @@
 package main
 
-type InputData struct {
+type inputData struct {
 	PubKeys    []CurvePoint    `json:"pubkeys"`
 	Signatures []RingSignature `json:"signatures"`
 }

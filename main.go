@@ -84,7 +84,7 @@ func main() {
 			panic(err)
 		}
 
-		inputData := InputData{
+		inputData := inputData{
 			PubKeys:    ring.PubKeys,
 			Signatures: signatures,
 		}
@@ -98,7 +98,7 @@ func main() {
 		fmt.Println(string(ringJSON))
 		os.Exit(0)
 	case "verify":
-		var inputData InputData
+		var inputData inputData
 
 		f := verifyCmd.String("f", "", "Path to a JSON file containing public keys and signatures")
 		m := verifyCmd.String("m", "", "The Hex encoded message used to generate the ring")
