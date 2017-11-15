@@ -132,3 +132,22 @@ func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
     // See: RFC5903 (Section 9)
     return theirPub.ScalarMult(myPriv).X.Bytes()
 }
+
+
+func NewStealthSession (mySecret *big.Int, theirPublic *CurvePoint, nonceOffset int, addressCount int) *StealthSession {
+    var addresses []StealthAddress
+
+    sharedSecret := deriveSharedSecret(mySecret, theirPublic)
+    for i := 0; i < addressCount; i++ {
+        nonce := new(big.Int).SetInt64(int64(nonceOffset + i))
+        secret := append(sharedSecret, nonce.Bytes()...)
+        theirStealthPub := StealthPubDerive(theirPublic, secret)
+
+        sa := StealthAddress{theirStealthPub, nonce}
+        addresses = append(addresses, sa)
+    }
+
+    session := StealthSession{derivePublicKey(mySecret), *theirPublic, sharedSecret, addresses}
+
+    return &session
+}

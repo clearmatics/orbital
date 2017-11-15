@@ -62,28 +62,14 @@ func main() {
 		}
 
 		// TODO: optionally parse their public key as a single string, then derive Y point
-		// TODO: make parsing public CurvePoint simpler
-		pkX, errX := new(big.Int).SetString(*theirPublicKeyX, 0)
-		pkY, errY := new(big.Int).SetString(*theirPublicKeyY, 0)
-		if ! errX || ! errY {
-			fmt.Fprintf(os.Stderr, "Unable to parse -x %v -y %v\n", *theirPublicKeyX, *theirPublicKeyY)
+		theirPublicKey := ParseCurvePoint(*theirPublicKeyX, *theirPublicKeyY)
+		if theirPublicKey == nil {
+			fmt.Fprintf(os.Stderr, "Unable to parse public key pair -x %v -y %v\n", *theirPublicKeyX, *theirPublicKeyY)
 			os.Exit(1)
 		}
-		theirPublicKey := CurvePoint{pkX, pkY}
 
-		var addresses []StealthAddress
+		session := NewStealthSession(mySecretKey, theirPublicKey, *nonceOffset, *n)
 
-		sharedSecret := deriveSharedSecret(mySecretKey, &theirPublicKey)
-		for i := 0; i < *n; i++ {
-			nonce := new(big.Int).SetInt64(int64(*nonceOffset + i))
-			secret := append(sharedSecret, nonce.Bytes()...)
-			theirStealthPub := StealthPubDerive(&theirPublicKey, secret)
-
-			sa := StealthAddress{theirStealthPub, nonce}
-			addresses = append(addresses, sa)
-		}
-
-		session := StealthSession{derivePublicKey(mySecretKey), theirPublicKey, sharedSecret, addresses}
 		saJSON, err := json.MarshalIndent(session, "", "  ")
 		if err != nil {
 			panic(err)
