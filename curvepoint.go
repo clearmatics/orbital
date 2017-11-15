@@ -15,6 +15,11 @@ type CurvePoint struct {
 	Y *big.Int `json:"y"`
 }
 
+// Equals returns true if X and Y of both curve points are equal
+func (c CurvePoint) Equals(d *CurvePoint) bool {
+	return 0 == c.X.Cmp(d.X) && 0 == c.Y.Cmp(d.Y)
+}
+
 func (c CurvePoint) String() string {
 	return fmt.Sprintf("X: %s, Y: %s", c.X, c.Y)
 }

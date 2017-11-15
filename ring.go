@@ -104,7 +104,7 @@ func (r *Ring) PubKeyIndex(pk CurvePoint) int {
 }
 
 // Signature generates a signature
-func (r *Ring) signature(pk *big.Int, message []byte, signer int) (*RingSignature, error) {
+func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignature, error) {
 	N := group.N
 
 	mR := r.Bytes()
@@ -185,7 +185,7 @@ func (r *Ring) Signatures(message []byte) ([]RingSignature, error) {
 		//pub := CurvePoint{}.ScalarBaseMult(privKey)
 		pub := r.PubKeys[i]
 		signerNumber := r.PubKeyIndex(pub)
-		signature, err := r.signature(privKey, message, signerNumber)
+		signature, err := r.Signature(privKey, message, signerNumber)
 		if err != nil {
 			return nil, err
 		}
