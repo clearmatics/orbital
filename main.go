@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"math/big"
 )
 
 func flagUsage() {
@@ -22,6 +23,7 @@ func flagUsage() {
 	generate	Generate public/private key pairs for a contract
 	inputs		Generate data inputs for a contract 
 	verify		Verify a set of public keys against signatures
+	stealth		Generate stealth addresses
 	Use "orbital [command] --help" for more information about a command.`
 	fmt.Fprintf(os.Stderr, "%s\n\n", usageText)
 }
@@ -30,6 +32,7 @@ func main() {
 	flag.Usage = flagUsage
 
 	generateCmd := flag.NewFlagSet("generate", flag.ExitOnError)
+	stealthCmd := flag.NewFlagSet("stealth", flag.ExitOnError)
 	inputsCmd := flag.NewFlagSet("inputs", flag.ExitOnError)
 	verifyCmd := flag.NewFlagSet("verify", flag.ExitOnError)
 
@@ -39,6 +42,54 @@ func main() {
 	}
 
 	switch os.Args[1] {
+	case "stealth":
+		n := stealthCmd.Int("n", 1, "Number of addresses to generate")
+		nonceOffset := stealthCmd.Int("o", 0, "Nonce offset")
+		_mySecretKey := stealthCmd.String("s", "", "Your secret key")
+		theirPublicKeyX := stealthCmd.String("x", "", "Their public key X point")
+		theirPublicKeyY := stealthCmd.String("y", "", "Their public key Y point")
+
+		stealthCmd.Parse(os.Args[2:])
+		if *n <= 0 || *_mySecretKey == "" || *theirPublicKeyX == "" || *theirPublicKeyY == "" {
+			stealthCmd.Usage()
+			return
+		}
+
+		mySecretKey, errMSK := new(big.Int).SetString(*_mySecretKey, 0)
+		if ! errMSK {
+			fmt.Fprintf(os.Stderr, "Unable to parse secret key: -s %v\n", *_mySecretKey)
+			os.Exit(1)
+		}
+
+		// TODO: optionally parse their public key as a single string, then derive Y point
+		// TODO: make parsing public CurvePoint simpler
+		pkX, errX := new(big.Int).SetString(*theirPublicKeyX, 0)
+		pkY, errY := new(big.Int).SetString(*theirPublicKeyY, 0)
+		if ! errX || ! errY {
+			fmt.Fprintf(os.Stderr, "Unable to parse -x %v -y %v\n", *theirPublicKeyX, *theirPublicKeyY)
+			os.Exit(1)
+		}
+		theirPublicKey := CurvePoint{pkX, pkY}
+
+		var addresses []StealthAddress
+
+		sharedSecret := deriveSharedSecret(mySecretKey, &theirPublicKey)
+		for i := 0; i < *n; i++ {
+			nonce := new(big.Int).SetInt64(int64(*nonceOffset + i))
+			secret := append(sharedSecret, nonce.Bytes()...)
+			theirStealthPub := StealthPubDerive(&theirPublicKey, secret)
+
+			sa := StealthAddress{theirStealthPub, nonce}
+			addresses = append(addresses, sa)
+		}
+
+		session := StealthSession{derivePublicKey(mySecretKey), theirPublicKey, sharedSecret, addresses}
+		saJSON, err := json.MarshalIndent(session, "", "  ")
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println(string(saJSON))
+
 	case "generate":
 		i := generateCmd.Int("n", 0, "The size of the ring to be generated e.g. 4")
 		generateCmd.Parse(os.Args[2:])

@@ -6,6 +6,7 @@ package main
 
 import (
     "testing"
+    "bytes"
 )
 
 
@@ -23,7 +24,7 @@ func TestPubDerive(t *testing.T) {
     // Using ECDH, derive shared secret between two key pairs
     sharedSecret := deriveSharedSecret(As, Bp)
     sharedSecretCheck := deriveSharedSecret(Bs, Ap)
-    if sharedSecret.Cmp(sharedSecretCheck) != 0 {
+    if 0 != bytes.Compare(sharedSecret, sharedSecretCheck) {
         t.Fatal("Shared secret incorrect")
     }
     

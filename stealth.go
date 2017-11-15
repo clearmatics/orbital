@@ -11,6 +11,20 @@ import (
 )
 
 
+type StealthAddress struct {
+    PubKey CurvePoint `json:"pubkey"`
+    Nonce *big.Int `json:"nonce"`
+}
+
+
+type StealthSession struct {
+    MyPublic CurvePoint `json:"myPublic"`
+    TheirPublic CurvePoint `json:"theirPublic"`
+    SharedSecret []byte `json:"sharedSecret"`
+    Addresses []StealthAddress `json:"stealthAddresses"`
+}
+
+
 // generateKeyPair generates a random secret key, then derives the
 // public key from it
 //
@@ -57,9 +71,9 @@ they both agree on a shared secret, and visa versa.
 //   mpk = their Public Key, as CurvePoint
 //   secret = arbitrary number known by both parties
 //
-func StealthPubDerive(mpk *CurvePoint, secret *big.Int) CurvePoint {
-    // X ← H(secret||nonce)
-    _hashout := sha256.Sum256(secret.Bytes())
+func StealthPubDerive(mpk *CurvePoint, secret []byte) CurvePoint {
+    // X ← H(secret)
+    _hashout := sha256.Sum256(secret)
     X := new(big.Int).SetBytes(_hashout[:])
 
     // Y ← g^X
@@ -83,9 +97,9 @@ func StealthPubDerive(mpk *CurvePoint, secret *big.Int) CurvePoint {
 // 
 //   msk = Your secret key
 //   secret = arbitrary number known by both parties
-func StealthPrivDerive(msk *big.Int, secret *big.Int) *big.Int {
+func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
     // X ← H(secret)
-    _hashout := sha256.Sum256(secret.Bytes())
+    _hashout := sha256.Sum256(secret)
     X := new(big.Int).SetBytes(_hashout[:])
 
     // ssk ← msk + X
@@ -114,7 +128,7 @@ func derivePublicKey (privateKey *big.Int) CurvePoint {
 // keys of A and B. (Ax,_) and (Bx,_) are points, and both Ax and Ay are equal.
 // The second points of the result are discarded according to RFC5903 (Section 9).
 //
-func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) *big.Int {
+func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
     // See: RFC5903 (Section 9)
-    return theirPub.ScalarMult(myPriv).X
+    return theirPub.ScalarMult(myPriv).X.Bytes()
 }
