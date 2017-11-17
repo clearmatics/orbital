@@ -103,7 +103,11 @@ func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
     X := new(big.Int).SetBytes(_hashout[:])
 
     // ssk ← msk + X
-    ssk := new(big.Int).Add(msk, X)
+    Y := new(big.Int).Add(msk, X)
+    ssk := new(big.Int).Mod(Y, group.N)
+    if ! derivePublicKey(ssk).IsOnCurve() {
+        return nil;
+    }
 
     return ssk
 }

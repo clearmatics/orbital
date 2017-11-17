@@ -20,6 +20,11 @@ func (c CurvePoint) Equals(d *CurvePoint) bool {
 	return 0 == c.X.Cmp(d.X) && 0 == c.Y.Cmp(d.Y)
 }
 
+// IsOnCurve returns true if point is on curve
+func (c CurvePoint) IsOnCurve() bool {
+	return group.IsOnCurve(c.X, c.Y)
+}
+
 func (c CurvePoint) String() string {
 	return fmt.Sprintf("X: %s, Y: %s", c.X, c.Y)
 }
