@@ -75,3 +75,38 @@ func TestStealthAddressSession(t *testing.T) {
         t.Fatal("Public Key Mismatch, A.MyA[1].P != B.TheirA[1].P")
     }
 }
+
+
+// Verify that invalid secret keys cannot be used
+// References:
+//  - https://crypto.stackexchange.com/a/30272
+//
+func TestStealthInvalidSecret(t *testing.T) {
+    _, _, Bp, _ := generatePairOfTestKeys(t)
+
+    bigZero := new(big.Int).SetInt64(int64(0))
+    bigOne := new(big.Int).SetInt64(int64(1))
+    nPlusOne := new(big.Int).Add(group.N, bigOne)
+
+    testBytes := []byte("test")
+
+    invalidSecretKeys := []*big.Int{bigZero, group.N, nPlusOne}
+
+    for _, secretKey := range invalidSecretKeys {
+        if nil != StealthPrivDerive(secretKey, testBytes) {
+            t.Log(secretKey, "accepted as secret key to StealthPrivDerive")
+        }
+
+        if derivePublicKey(secretKey).IsOnCurve() {
+            t.Log(secretKey, "accepted as secret key to derivePublicKey")
+        }
+
+        if nil != deriveSharedSecret(secretKey, Bp) {
+            t.Log(secretKey, "accepted as secret key to deriveSharedSecret")
+        }
+
+        if nil != NewStealthSession(secretKey, Bp, 0, 1) {
+            t.Log(secretKey, "accepted as secret key to NewStealthSession")
+        }
+    }
+}
