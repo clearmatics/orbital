@@ -15,6 +15,16 @@ type CurvePoint struct {
 	Y *big.Int `json:"y"`
 }
 
+// Equals returns true if X and Y of both curve points are equal
+func (c CurvePoint) Equals(d *CurvePoint) bool {
+	return 0 == c.X.Cmp(d.X) && 0 == c.Y.Cmp(d.Y)
+}
+
+// IsOnCurve returns true if point is on curve
+func (c CurvePoint) IsOnCurve() bool {
+	return group.IsOnCurve(c.X, c.Y)
+}
+
 func (c CurvePoint) String() string {
 	return fmt.Sprintf("X: %s, Y: %s", c.X, c.Y)
 }
@@ -51,4 +61,16 @@ func (c CurvePoint) HashPointAdd(hashSP CurvePoint, tj *big.Int, cj *big.Int) Cu
 	bj := hashSP.ScalarMult(cj)
 
 	return b.Add(bj)
+}
+
+// ParseCurvePoint parses string representations of X and Y points
+// these can be hex or base10 encoded
+func ParseCurvePoint( pointX string, pointY string ) *CurvePoint {
+	X, errX := new(big.Int).SetString(pointX, 0)
+	Y, errY := new(big.Int).SetString(pointY, 0)
+	if ! errX || ! errY {
+		return nil;
+	}
+
+	return &CurvePoint{X, Y}
 }

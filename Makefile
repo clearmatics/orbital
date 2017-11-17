@@ -6,7 +6,7 @@ clean:
 	@rm -f orbital
 
 test:
-	@go test ./...
+	@go test -v
 
 format:
 	@gofmt -s -w ${GOFILES_NOVENDOR}
