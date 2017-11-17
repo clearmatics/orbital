@@ -12,8 +12,15 @@ import (
 
 
 type StealthAddress struct {
-    PubKey CurvePoint `json:"pubkey"`
+    Public CurvePoint `json:"public"`
     Nonce *big.Int `json:"nonce"`
+}
+
+
+type PrivateStealthAddress struct {
+    Public CurvePoint `json:"public"`
+    Nonce *big.Int `json:"nonce"`
+    Private *big.Int `json:"private"`
 }
 
 
@@ -21,7 +28,8 @@ type StealthSession struct {
     MyPublic CurvePoint `json:"myPublic"`
     TheirPublic CurvePoint `json:"theirPublic"`
     SharedSecret []byte `json:"sharedSecret"`
-    Addresses []StealthAddress `json:"stealthAddresses"`
+    TheirAddresses []StealthAddress `json:"theirStealthAddresses"`
+    MyAddresses []PrivateStealthAddress `json:"myStealthAddresses"`
 }
 
 
@@ -139,19 +147,31 @@ func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
 
 
 func NewStealthSession (mySecret *big.Int, theirPublic *CurvePoint, nonceOffset int, addressCount int) *StealthSession {
-    var addresses []StealthAddress
+    var theirAddresses []StealthAddress
+    var myAddresses []PrivateStealthAddress
 
     sharedSecret := deriveSharedSecret(mySecret, theirPublic)
     for i := 0; i < addressCount; i++ {
         nonce := new(big.Int).SetInt64(int64(nonceOffset + i))
         secret := append(sharedSecret, nonce.Bytes()...)
-        theirStealthPub := StealthPubDerive(theirPublic, secret)
 
-        sa := StealthAddress{theirStealthPub, nonce}
-        addresses = append(addresses, sa)
+        theirStealthPub := StealthPubDerive(theirPublic, secret)
+        theirSA := StealthAddress{theirStealthPub, nonce}
+        theirAddresses = append(theirAddresses, theirSA)
+
+        myStealthPriv := StealthPrivDerive(mySecret, secret)
+        myStealthPub := derivePublicKey(myStealthPriv)
+        mySA := PrivateStealthAddress{myStealthPub, nonce, myStealthPriv}
+        myAddresses = append(myAddresses, mySA)
     }
 
-    session := StealthSession{derivePublicKey(mySecret), *theirPublic, sharedSecret, addresses}
+    session := StealthSession{
+        MyPublic: derivePublicKey(mySecret),
+        TheirPublic: *theirPublic,
+        SharedSecret: sharedSecret,
+        TheirAddresses: theirAddresses,
+        MyAddresses: myAddresses,
+    }
 
     return &session
 }
