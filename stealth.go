@@ -47,26 +47,6 @@ func generateKeyPair () (*CurvePoint, *big.Int, error) {
 }
 
 
-/*
-According to the paper (IACR 2017/881), the relationship between stealth
-addresses is bidirectional:
-
-    spkA = mpkA + g^H(secret||nonce)
-    spkB = mpkB + g^H(secret||nonce)
-
-Which means
-
-    spkA / spkB = mpkA / mpkB
-
-IMO, the notation in the paper is not as clear as it could be, but it's
-easily translated and has proven to be correct in practice; the notation
-used here has been adjusted accordingly.
-
-Anyway, this means that A can know what B's stealth public key will be if
-they both agree on a shared secret, and visa versa.
-*/
-
-
 // StealthPubDerive derives another parties Stealth Public Key (ssp) from
 // their Master Public Key and an arbitrary shared secret.
 //
@@ -79,7 +59,12 @@ they both agree on a shared secret, and visa versa.
 //   mpk = their Public Key, as CurvePoint
 //   secret = arbitrary number known by both parties
 //
-func StealthPubDerive(mpk *CurvePoint, secret []byte) CurvePoint {
+func StealthPubDerive(mpk *CurvePoint, secret []byte) *CurvePoint {
+    if ! mpk.IsOnCurve() {
+        // TODO: return error
+        return nil
+    }
+
     // X ← H(secret)
     _hashout := sha256.Sum256(secret)
     X := new(big.Int).SetBytes(_hashout[:])
@@ -90,7 +75,7 @@ func StealthPubDerive(mpk *CurvePoint, secret []byte) CurvePoint {
     // spk ← mpk + Y
     spk := mpk.Add(Y)
 
-    return spk
+    return &spk
 }
 
 
@@ -110,10 +95,13 @@ func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
     _hashout := sha256.Sum256(secret)
     X := new(big.Int).SetBytes(_hashout[:])
 
-    // ssk ← msk + X
+    // ssk ← msk + X    
     Y := new(big.Int).Add(msk, X)
+
+    // XXX: can (msk + X) exceed group.N?
     ssk := new(big.Int).Mod(Y, group.N)
     if ! derivePublicKey(ssk).IsOnCurve() {
+        // TODO: return error?
         return nil;
     }
 
@@ -122,7 +110,7 @@ func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
 
 
 // derivePublicKey derives from SecretKey using ScalarBaseMult:
-//
+//o
 //    Pa,Pb ← g^S
 //
 func derivePublicKey (privateKey *big.Int) CurvePoint {
@@ -156,7 +144,11 @@ func NewStealthSession (mySecret *big.Int, theirPublic *CurvePoint, nonceOffset 
         secret := append(sharedSecret, nonce.Bytes()...)
 
         theirStealthPub := StealthPubDerive(theirPublic, secret)
-        theirSA := StealthAddress{theirStealthPub, nonce}
+        if theirStealthPub == nil {
+            // TODO: return error
+            return nil
+        }
+        theirSA := StealthAddress{*theirStealthPub, nonce}
         theirAddresses = append(theirAddresses, theirSA)
 
         myStealthPriv := StealthPrivDerive(mySecret, secret)

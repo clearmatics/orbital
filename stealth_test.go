@@ -48,7 +48,7 @@ func TestStealthAddressPrimitives(t *testing.T) {
         t.Fatal("Stealth address deriviation failure A->B")
     }
 
-    if false == ssAp.Equals(&spB) {
+    if false == ssAp.Equals(spB) {
         t.Fatal("Stealth address deriviation failure B->A")
     }
 }
@@ -77,6 +77,11 @@ func TestStealthAddressSession(t *testing.T) {
 }
 
 
+var bigZero = new(big.Int).SetInt64(int64(0))
+var bigOne = new(big.Int).SetInt64(int64(1))
+
+var testBytes = []byte("test")
+
 // Verify that invalid secret keys cannot be used
 // References:
 //  - https://crypto.stackexchange.com/a/30272
@@ -84,13 +89,8 @@ func TestStealthAddressSession(t *testing.T) {
 func TestStealthInvalidSecret(t *testing.T) {
     _, _, Bp, _ := generatePairOfTestKeys(t)
 
-    bigZero := new(big.Int).SetInt64(int64(0))
-    bigOne := new(big.Int).SetInt64(int64(1))
-    nPlusOne := new(big.Int).Add(group.N, bigOne)
-
-    testBytes := []byte("test")
-
-    invalidSecretKeys := []*big.Int{bigZero, group.N, nPlusOne}
+    var nPlusOne = new(big.Int).Add(group.N, bigOne)
+    var invalidSecretKeys = []*big.Int{bigZero, group.N, nPlusOne}
 
     for _, secretKey := range invalidSecretKeys {
         if nil != StealthPrivDerive(secretKey, testBytes) {
@@ -107,6 +107,31 @@ func TestStealthInvalidSecret(t *testing.T) {
 
         if nil != NewStealthSession(secretKey, Bp, 0, 1) {
             t.Log(secretKey, "accepted as secret key to NewStealthSession")
+        }
+    }
+}
+
+
+func TestStealthInvalidPublic(t *testing.T) {
+    _, As, Bp, _ := generatePairOfTestKeys(t)
+    var nPlusOne = new(big.Int).Add(group.N, bigOne)
+    var invalidSecretKeys = []*big.Int{bigZero, group.N, nPlusOne}
+
+    for _, secretKey := range invalidSecretKeys {
+        publicKey := derivePublicKey(secretKey)
+        if StealthPubDerive(&publicKey, testBytes) != nil {
+            t.Log(publicKey, "(from ", secretKey, ") accepted as public key to StealthPubDerive")
+        }
+        if NewStealthSession(As, &publicKey, 0, 1) != nil {
+            t.Log(publicKey, "(from ", secretKey, ") accepted as public key to NewStealthSession")
+        }
+
+        alteredPublicKey := CurvePoint{new(big.Int).Add(Bp.X, bigOne), new(big.Int).Add(Bp.Y, bigOne)}
+        if StealthPubDerive(&alteredPublicKey, testBytes) != nil {
+            t.Log(Bp, " + (1,-1) accepted as public key to StealthPubDerive")
+        }
+        if NewStealthSession(As, &alteredPublicKey, 0, 1) != nil {
+            t.Log(Bp, " + (1,-1) accepted as public key to NewStealthSession")
         }
     }
 }
