@@ -104,8 +104,7 @@ func TestStealthInvalidSecret(t *testing.T) {
 
 func TestStealthInvalidPublic(t *testing.T) {
     _, As, Bp, _ := generatePairOfTestKeys(t)
-    var nPlusOne = new(big.Int).Add(group.N, bigOne)
-    var invalidSecretKeys = []*big.Int{bigZero, group.N, nPlusOne}
+    var invalidSecretKeys = []*big.Int{bigZero, group.N}
 
     for _, secretKey := range invalidSecretKeys {
         publicKey := derivePublicKey(secretKey)
