@@ -47,6 +47,29 @@ func generateKeyPair () (*CurvePoint, *big.Int, error) {
 }
 
 
+
+var bigZero = new(big.Int).SetInt64(int64(0))
+var bigOne = new(big.Int).SetInt64(int64(1))
+
+
+// isValidSecretKey checks if the secret can be used to derive
+// a valid curve point
+//
+func isValidSecretKey (secret *big.Int) bool {
+    // < 1
+    if secret.Cmp(bigOne) < 0 {
+        return false
+    }
+
+    // >= G
+    if secret.Cmp(group.N) >= 0 {
+        return false
+    }
+
+    return true
+}
+
+
 // StealthPubDerive derives another parties Stealth Public Key (ssp) from
 // their Master Public Key and an arbitrary shared secret.
 //
@@ -61,7 +84,6 @@ func generateKeyPair () (*CurvePoint, *big.Int, error) {
 //
 func StealthPubDerive(mpk *CurvePoint, secret []byte) *CurvePoint {
     if ! mpk.IsOnCurve() {
-        // TODO: return error
         return nil
     }
 
@@ -91,6 +113,10 @@ func StealthPubDerive(mpk *CurvePoint, secret []byte) *CurvePoint {
 //   msk = Your secret key
 //   secret = arbitrary number known by both parties
 func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
+    if false == isValidSecretKey(msk) {
+        return nil
+    }
+
     // X ← H(secret)
     _hashout := sha256.Sum256(secret)
     X := new(big.Int).SetBytes(_hashout[:])
@@ -129,6 +155,8 @@ func derivePublicKey (privateKey *big.Int) CurvePoint {
 // The second points of the result are discarded according to RFC5903 (Section 9).
 //
 func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
+    // TODO: theirPub.IsOnCurve?
+    // TODO: isValidSecretKey(myPriv)
     // See: RFC5903 (Section 9)
     return theirPub.ScalarMult(myPriv).X.Bytes()
 }
@@ -137,6 +165,10 @@ func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
 func NewStealthSession (mySecret *big.Int, theirPublic *CurvePoint, nonceOffset int, addressCount int) *StealthSession {
     var theirAddresses []StealthAddress
     var myAddresses []PrivateStealthAddress
+
+    if false == isValidSecretKey(mySecret) {
+        return nil
+    }
 
     sharedSecret := deriveSharedSecret(mySecret, theirPublic)
     for i := 0; i < addressCount; i++ {
