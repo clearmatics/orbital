@@ -10,20 +10,23 @@ import (
     "math/big"
 )
 
-
+// StealthAddress represents the stealth public key of another party
 type StealthAddress struct {
     Public CurvePoint `json:"public"`
     Nonce *big.Int `json:"nonce"`
 }
 
 
+// PrivateStealthAddress represents a stealth address that you own
 type PrivateStealthAddress struct {
     Public CurvePoint `json:"public"`
     Nonce *big.Int `json:"nonce"`
     Private *big.Int `json:"private"`
 }
 
-
+// StealthSession is used to communicate between two parties using
+// ephemeral key pairs for each message.
+//
 type StealthSession struct {
     MyPublic CurvePoint `json:"myPublic"`
     TheirPublic CurvePoint `json:"theirPublic"`
@@ -162,6 +165,9 @@ func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
 }
 
 
+// NewStealthSession derives all information necessary to communicate between
+// two parties using a series of one-time key pairs.
+//
 func NewStealthSession (mySecret *big.Int, theirPublic *CurvePoint, nonceOffset int, addressCount int) *StealthSession {
     var theirAddresses []StealthAddress
     var myAddresses []PrivateStealthAddress
