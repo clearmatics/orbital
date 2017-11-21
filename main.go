@@ -94,6 +94,7 @@ func main() {
 		}
 
 		fmt.Println(string(ringJSON))
+
 	case "inputs":
 		n := inputsCmd.Int("n", 0, "The size of the ring to be generated e.g. 4")
 		m := inputsCmd.String("m", "", "A Hex encoded string to be used to generate the ring")
@@ -108,8 +109,17 @@ func main() {
 			return
 		}
 
+		alicePub, alicePriv, err := generateKeyPair()
+		bobPub, bobPriv, err := generateKeyPair()
+		stealthSessionAliceToBob := NewStealthSession(alicePriv, bobPub, 0, 1)
+		stealthSessionBobToAlice := NewStealthSession(bobPriv, alicePub, 0, 1)
+
 		ring := &Ring{}
 		ring.Generate(*n)
+		ring.PrivKeys[0] = stealthSessionBobToAlice.MyAddresses[0].Private
+		ring.PubKeys[0] = stealthSessionAliceToBob.TheirAddresses[0].Public
+
+		// TOOO: replace first key with stealth address generated between Alice and Bob
 
 		decoded, err := hex.DecodeString(*m)
 		if err != nil {
@@ -124,6 +134,8 @@ func main() {
 		inputData := inputData{
 			PubKeys:    ring.PubKeys,
 			Signatures: signatures,
+			AliceToBob: stealthSessionAliceToBob,
+			BobToAlice: stealthSessionBobToAlice,
 		}
 
 		ringJSON, err := json.MarshalIndent(inputData, "", "  ")
@@ -134,6 +146,7 @@ func main() {
 
 		fmt.Println(string(ringJSON))
 		os.Exit(0)
+
 	case "verify":
 		var inputData inputData
 
@@ -178,6 +191,7 @@ func main() {
 		}
 		fmt.Println("Signatures verified")
 		os.Exit(0)
+
 	default:
 		flag.Usage()
 	}

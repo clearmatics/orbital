@@ -10,18 +10,29 @@ import (
     "math/big"
 )
 
-
+// StealthAddress represents the stealth public key of another party
 type StealthAddress struct {
-    PubKey CurvePoint `json:"pubkey"`
+    Public CurvePoint `json:"public"`
     Nonce *big.Int `json:"nonce"`
 }
 
 
+// PrivateStealthAddress represents a stealth address that you own
+type PrivateStealthAddress struct {
+    Public CurvePoint `json:"public"`
+    Nonce *big.Int `json:"nonce"`
+    Private *big.Int `json:"private"`
+}
+
+// StealthSession is used to communicate between two parties using
+// ephemeral key pairs for each message.
+//
 type StealthSession struct {
     MyPublic CurvePoint `json:"myPublic"`
     TheirPublic CurvePoint `json:"theirPublic"`
     SharedSecret []byte `json:"sharedSecret"`
-    Addresses []StealthAddress `json:"stealthAddresses"`
+    TheirAddresses []StealthAddress `json:"theirStealthAddresses"`
+    MyAddresses []PrivateStealthAddress `json:"myStealthAddresses"`
 }
 
 
@@ -39,24 +50,27 @@ func generateKeyPair () (*CurvePoint, *big.Int, error) {
 }
 
 
-/*
-According to the paper (IACR 2017/881), the relationship between stealth
-addresses is bidirectional:
 
-    spkA = mpkA + g^H(secret||nonce)
-    spkB = mpkB + g^H(secret||nonce)
+var bigZero = new(big.Int).SetInt64(int64(0))
+var bigOne = new(big.Int).SetInt64(int64(1))
 
-Which means
 
-    spkA / spkB = mpkA / mpkB
+// isValidSecretKey checks if the secret can be used to derive
+// a valid curve point
+//
+func isValidSecretKey (secret *big.Int) bool {
+    // < 1
+    if secret.Cmp(bigOne) < 0 {
+        return false
+    }
 
-IMO, the notation in the paper is not as clear as it could be, but it's
-easily translated and has proven to be correct in practice; the notation
-used here has been adjusted accordingly.
+    // >= G
+    if secret.Cmp(group.N) >= 0 {
+        return false
+    }
 
-Anyway, this means that A can know what B's stealth public key will be if
-they both agree on a shared secret, and visa versa.
-*/
+    return true
+}
 
 
 // StealthPubDerive derives another parties Stealth Public Key (ssp) from
@@ -71,7 +85,11 @@ they both agree on a shared secret, and visa versa.
 //   mpk = their Public Key, as CurvePoint
 //   secret = arbitrary number known by both parties
 //
-func StealthPubDerive(mpk *CurvePoint, secret []byte) CurvePoint {
+func StealthPubDerive(mpk *CurvePoint, secret []byte) *CurvePoint {
+    if ! mpk.IsOnCurve() {
+        return nil
+    }
+
     // X ← H(secret)
     _hashout := sha256.Sum256(secret)
     X := new(big.Int).SetBytes(_hashout[:])
@@ -82,7 +100,7 @@ func StealthPubDerive(mpk *CurvePoint, secret []byte) CurvePoint {
     // spk ← mpk + Y
     spk := mpk.Add(Y)
 
-    return spk
+    return &spk
 }
 
 
@@ -98,14 +116,21 @@ func StealthPubDerive(mpk *CurvePoint, secret []byte) CurvePoint {
 //   msk = Your secret key
 //   secret = arbitrary number known by both parties
 func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
+    if false == isValidSecretKey(msk) {
+        return nil
+    }
+
     // X ← H(secret)
     _hashout := sha256.Sum256(secret)
     X := new(big.Int).SetBytes(_hashout[:])
 
-    // ssk ← msk + X
+    // ssk ← msk + X    
     Y := new(big.Int).Add(msk, X)
+
+    // XXX: can (msk + X) exceed group.N?
     ssk := new(big.Int).Mod(Y, group.N)
     if ! derivePublicKey(ssk).IsOnCurve() {
+        // TODO: return error?
         return nil;
     }
 
@@ -114,7 +139,7 @@ func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
 
 
 // derivePublicKey derives from SecretKey using ScalarBaseMult:
-//
+//o
 //    Pa,Pb ← g^S
 //
 func derivePublicKey (privateKey *big.Int) CurvePoint {
@@ -133,25 +158,50 @@ func derivePublicKey (privateKey *big.Int) CurvePoint {
 // The second points of the result are discarded according to RFC5903 (Section 9).
 //
 func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
+    // TODO: theirPub.IsOnCurve?
+    // TODO: isValidSecretKey(myPriv)
     // See: RFC5903 (Section 9)
     return theirPub.ScalarMult(myPriv).X.Bytes()
 }
 
 
+// NewStealthSession derives all information necessary to communicate between
+// two parties using a series of one-time key pairs.
+//
 func NewStealthSession (mySecret *big.Int, theirPublic *CurvePoint, nonceOffset int, addressCount int) *StealthSession {
-    var addresses []StealthAddress
+    var theirAddresses []StealthAddress
+    var myAddresses []PrivateStealthAddress
+
+    if false == isValidSecretKey(mySecret) {
+        return nil
+    }
 
     sharedSecret := deriveSharedSecret(mySecret, theirPublic)
     for i := 0; i < addressCount; i++ {
         nonce := new(big.Int).SetInt64(int64(nonceOffset + i))
         secret := append(sharedSecret, nonce.Bytes()...)
-        theirStealthPub := StealthPubDerive(theirPublic, secret)
 
-        sa := StealthAddress{theirStealthPub, nonce}
-        addresses = append(addresses, sa)
+        theirStealthPub := StealthPubDerive(theirPublic, secret)
+        if theirStealthPub == nil {
+            // TODO: return error
+            return nil
+        }
+        theirSA := StealthAddress{*theirStealthPub, nonce}
+        theirAddresses = append(theirAddresses, theirSA)
+
+        myStealthPriv := StealthPrivDerive(mySecret, secret)
+        myStealthPub := derivePublicKey(myStealthPriv)
+        mySA := PrivateStealthAddress{myStealthPub, nonce, myStealthPriv}
+        myAddresses = append(myAddresses, mySA)
     }
 
-    session := StealthSession{derivePublicKey(mySecret), *theirPublic, sharedSecret, addresses}
+    session := StealthSession{
+        MyPublic: derivePublicKey(mySecret),
+        TheirPublic: *theirPublic,
+        SharedSecret: sharedSecret,
+        TheirAddresses: theirAddresses,
+        MyAddresses: myAddresses,
+    }
 
     return &session
 }
