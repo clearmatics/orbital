@@ -8,11 +8,12 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
-	secp "github.com/btcsuite/btcd/btcec"
 	"math/big"
+//	secp "github.com/btcsuite/btcd/btcec"
+	"golang.org/x/crypto/bn256"
 )
 
-var group *secp.KoblitzCurve
+//var group *secp.KoblitzCurve
 
 // A Ring is a number of public/private key pairs
 type Ring struct {
@@ -21,7 +22,7 @@ type Ring struct {
 }
 
 func init() {
-	group = secp.S256()
+//	group = secp.S256()
 }
 
 func convert(data []byte) *big.Int {
@@ -30,8 +31,8 @@ func convert(data []byte) *big.Int {
 	return z
 }
 
-func hashToCurve(s []byte) (CurvePoint, error) {
-	q := group.P
+func hashToCurve(s []byte) (*CurvePoint, error) {
+	q := bn256.Order //group.P
 
 	x := big.NewInt(0)
 	y := big.NewInt(0)
@@ -49,13 +50,13 @@ func hashToCurve(s []byte) (CurvePoint, error) {
 		y.Rsh(y, 2)
 		y.Exp(xcube7, y, q)
 		z = z.Exp(y, big.NewInt(2), q)
-		curveout := group.IsOnCurve(x, y)
-		if curveout == true {
-			return CurvePoint{x, y}, nil
+		curveout, isOk := CurvePoint{}.InitFromXY(x, y) // group.IsOnCurve(x, y)
+		if isOk {
+			return curveout, nil
 		}
 		x.Add(x, big.NewInt(1))
 	}
-	return CurvePoint{}, errors.New("no curve point found")
+	return nil, errors.New("no curve point found")
 }
 
 // Bytes converts a public key x,y pair slice to bytes
@@ -63,28 +64,27 @@ func (r Ring) Bytes() []byte {
 	var b []byte
 
 	for i := 0; i < len(r.PubKeys); i++ {
-		b = append(b, r.PubKeys[i].X.Bytes()...)
+		//b = append(b, r.PubKeys[i].X.Bytes()...)
+		b = append(b, r.PubKeys[i].Marshal()...)
 	}
+	/*
 	for i := 0; i < len(r.PubKeys); i++ {
 		b = append(b, r.PubKeys[i].Y.Bytes()...)
 	}
+	*/
 
 	return b
 }
 
 // Generate creates public and private keypairs for a ring with the size of n
 func (r *Ring) Generate(n int) error {
-
-	q := group.P
-
 	for i := 0; i < n; i++ {
-		priv, err := rand.Int(rand.Reader, q)
+		public, private, err := generateKeyPair()
 		if err != nil {
 			return err
 		}
-		r.PrivKeys = append(r.PrivKeys, priv)
-		p := CurvePoint{}.ScalarBaseMult(priv)
-		r.PubKeys = append(r.PubKeys, p)
+		r.PrivKeys = append(r.PrivKeys, private)
+		r.PubKeys = append(r.PubKeys, *public)
 	}
 
 	return nil
@@ -105,7 +105,7 @@ func (r *Ring) PubKeyIndex(pk CurvePoint) int {
 
 // Signature generates a signature
 func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignature, error) {
-	N := group.N
+	N := bn256.Order //group.N
 
 	mR := r.Bytes()
 	byteslist := append(mR, message...)
@@ -115,7 +115,7 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 
 	n := len(r.PubKeys)
 	var ctlist []*big.Int   //This has to be 2n so here we have n = 4 so 2n = 8 :)
-	var hashlist []*big.Int //This has to be 4n but Go won't let it be not const so 16 it is :P
+	//var hashlist []*big.Int //This has to be 4n but Go won't let it be not const so 16 it is :P
 	var a, b CurvePoint
 	var ri *big.Int
 	var e error
@@ -124,10 +124,12 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 	for j := 0; j < n; j++ {
 
 		if j != signer {
+			// XXX: can be 0
 			cj, err := rand.Int(rand.Reader, N) // this returns *big.Int
 			if err != nil {
 				return nil, err
 			}
+			// XXX: can be 0!
 			tj, err := rand.Int(rand.Reader, N) // this returns *big.Int tooo
 			if err != nil {
 				return nil, err
@@ -152,12 +154,16 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 			a = CurvePoint{}.ScalarBaseMult(ri)
 			b = hashp.ScalarMult(ri)
 		}
-		hashlist = append(hashlist, a.X, a.Y, b.X, b.Y)
+		//hashlist = append(hashlist, a.X, a.Y, b.X, b.Y)
+		byteslist = append(byteslist, a.Marshal()...)
+		byteslist = append(byteslist, b.Marshal()...)
 	}
+	/*
 	for _, v := range hashlist {
 		xx := v.Bytes()
 		byteslist = append(byteslist, xx[:]...)
 	}
+	*/
 
 	hasha := sha256.Sum256(byteslist)
 	hashb := new(big.Int).SetBytes(hasha[:])
@@ -203,8 +209,8 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 	tau := sigma.Tau
 	ctlist := sigma.Ctlist
 	n := len(r.PubKeys)
-	N := group.N
-	var hashlist []*big.Int
+	N := bn256.Order //group.N
+	//var hashlist []*big.Int
 
 	mR := r.Bytes()
 	byteslist := append(mR, message...)
@@ -222,13 +228,17 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 		tauc := tau.ScalarMult(cj)            //H(m||R)^(xc)
 		gt = gt.Add(yc)
 		H = H.Add(tauc) // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
-		hashlist = append(hashlist, gt.X, gt.Y, H.X, H.Y)
+		//hashlist = append(hashlist, gt.X, gt.Y, H.X, H.Y)
+		byteslist = append(byteslist, gt.Marshal()...)
+		byteslist = append(byteslist, H.Marshal()...)
 		csum.Add(csum, cj)
 	}
+	/*
 	for _, v := range hashlist {
 		xx := v.Bytes()
 		byteslist = append(byteslist, xx[:]...)
 	}
+	*/
 
 	hash := sha256.Sum256(byteslist)
 	hashhash := new(big.Int).SetBytes(hash[:])

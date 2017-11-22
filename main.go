@@ -116,8 +116,10 @@ func main() {
 
 		ring := &Ring{}
 		ring.Generate(*n)
+		/*
 		ring.PrivKeys[0] = stealthSessionBobToAlice.MyAddresses[0].Private
 		ring.PubKeys[0] = stealthSessionAliceToBob.TheirAddresses[0].Public
+		*/
 
 		// TOOO: replace first key with stealth address generated between Alice and Bob
 

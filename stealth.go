@@ -8,6 +8,7 @@ import (
     "crypto/sha256"
     "crypto/rand"
     "math/big"
+    "golang.org/x/crypto/bn256"
 )
 
 // StealthAddress represents the stealth public key of another party
@@ -40,7 +41,7 @@ type StealthSession struct {
 // public key from it
 //
 func generateKeyPair () (*CurvePoint, *big.Int, error) {    
-    q := group.P
+    q := bn256.Order
     priv, err := rand.Int(rand.Reader, q)
     if err != nil {
         return nil, nil, err
@@ -65,7 +66,7 @@ func isValidSecretKey (secret *big.Int) bool {
     }
 
     // >= G
-    if secret.Cmp(group.N) >= 0 {
+    if secret.Cmp(bn256.Order) >= 0 {
         return false
     }
 
@@ -128,7 +129,7 @@ func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
     Y := new(big.Int).Add(msk, X)
 
     // XXX: can (msk + X) exceed group.N?
-    ssk := new(big.Int).Mod(Y, group.N)
+    ssk := new(big.Int).Mod(Y, bn256.Order)
     if ! derivePublicKey(ssk).IsOnCurve() {
         // TODO: return error?
         return nil;
@@ -161,7 +162,8 @@ func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
     // TODO: theirPub.IsOnCurve?
     // TODO: isValidSecretKey(myPriv)
     // See: RFC5903 (Section 9)
-    return theirPub.ScalarMult(myPriv).X.Bytes()
+    //return theirPub.ScalarMult(myPriv).X.Bytes()
+    return theirPub.ScalarMult(myPriv).Marshal()[:32]
 }
 
 
