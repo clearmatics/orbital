@@ -6,9 +6,7 @@ package main;
 
 import (
     "crypto/sha256"
-    "crypto/rand"
     "math/big"
-    "github.com/clearmatics/bn256"
 )
 
 // StealthAddress represents the stealth public key of another party
@@ -41,17 +39,7 @@ type StealthSession struct {
 // public key from it
 //
 func generateKeyPair () (*CurvePoint, *big.Int, error) {
-    var priv *big.Int
-    var err error 
-    for {
-        priv, err = rand.Int(rand.Reader, bn256.Order)
-        if err != nil {
-            return nil, nil, err
-        }
-        if isValidSecretKey(priv) {
-            break
-        }
-    }
+    priv := CurvePoint{}.RandomN()
     // TODO: verify secret key?
     pub := derivePublicKey(priv)
     return &pub, priv, nil
@@ -153,7 +141,8 @@ func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
 //    Px,Py ← g^S
 //
 func derivePublicKey (privateKey *big.Int) CurvePoint {
-    return CurvePoint{new(bn256.G1).ScalarBaseMult(privateKey)}
+    //return CurvePoint{new(bn256.G1).ScalarBaseMult(privateKey)}
+    return CurvePoint{}.ScalarBaseMult(privateKey)
 }
 
 
@@ -168,8 +157,6 @@ func derivePublicKey (privateKey *big.Int) CurvePoint {
 // The second points of the result are discarded according to RFC5903 (Section 9).
 //
 func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
-    // TODO: theirPub.IsOnCurve?
-    // TODO: isValidSecretKey(myPriv)
     // See: RFC5903 (Section 9)
     //return theirPub.ScalarMult(myPriv).X.Bytes()
     return theirPub.ScalarMult(myPriv).Marshal()[:32]

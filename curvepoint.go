@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"crypto/rand"
 	"math/big"
 	"github.com/clearmatics/bn256"
 	"crypto/sha256"
@@ -29,6 +30,39 @@ func (c CurvePoint) Prime() *big.Int {
 
 func (c CurvePoint) Order() *big.Int {
 	return bn256.Order
+}
+
+
+// isBetween checks number is within range of (lower,upper)
+// e.g. number > lower && number < upper
+func isBetween (number *big.Int, lower *big.Int, upper *big.Int) bool {
+	return false == (number.Cmp(lower) <= 0 || number.Cmp(upper) >= 0)
+}
+
+
+// randomPositiveBelow generates a uniformly random number between 1 and `below` 
+func randomPositiveBelow (below *big.Int) *big.Int {
+	for {
+        number, err := rand.Int(rand.Reader, bn256.Order)
+        if err != nil {
+            return nil
+        }
+
+        // x >= 1 || x < below
+        if isBetween(number, bigZero, below) {
+        	return number
+        }
+    }
+}
+
+// RandomN returns a uniformly random integer between 1 and P-1
+func (c CurvePoint) RandomN() *big.Int {
+	return randomPositiveBelow(c.Order())
+}
+
+// RandomP returns a uniformly random integer between 1 and P-1
+func (c CurvePoint) RandomP() *big.Int {
+	return randomPositiveBelow(c.Prime())
 }
 
 func (c CurvePoint) GetXY() (*big.Int, *big.Int) {

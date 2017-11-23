@@ -5,7 +5,6 @@
 package main
 
 import (
-	"crypto/rand"
 	"crypto/sha256"
 	"math/big"
 )
@@ -67,7 +66,7 @@ func (r *Ring) PubKeyIndex(pk CurvePoint) int {
 
 // Signature generates a signature
 func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignature, error) {
-	N := CurvePoint{}.Order() //group.N
+	N := CurvePoint{}.Order()
 
 	mR := r.Bytes()
 	byteslist := append(mR, message...)
@@ -81,22 +80,13 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 	var ctlist []*big.Int   //This has to be 2n so here we have n = 4 so 2n = 8 :)
 	var a, b CurvePoint
 	var ri *big.Int
-	var e error
 	csum := big.NewInt(0)
 
 	for j := 0; j < n; j++ {
 
 		if j != signer {
-			// XXX: can be 0
-			cj, err := rand.Int(rand.Reader, N) // this returns *big.Int
-			if err != nil {
-				return nil, err
-			}
-			// XXX: can be 0!
-			tj, err := rand.Int(rand.Reader, N) // this returns *big.Int tooo
-			if err != nil {
-				return nil, err
-			}
+			cj := CurvePoint{}.RandomN()
+			tj := CurvePoint{}.RandomN()
 
 			a = r.PubKeys[j].ParameterPointAdd(tj, cj)
 
@@ -110,10 +100,7 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 			dummy := big.NewInt(0)
 			ctlist = append(ctlist, dummy)
 			ctlist = append(ctlist, dummy)
-			ri, e = rand.Int(rand.Reader, N)
-			if e != nil {
-				return nil, e
-			}
+			ri = CurvePoint{}.RandomN()
 			a = CurvePoint{}.ScalarBaseMult(ri)
 			b = hashp.ScalarMult(ri)
 		}
