@@ -8,12 +8,12 @@ import (
 	"bytes"
 	"fmt"
 	"math/big"
-	"golang.org/x/crypto/bn256"
+	"github.com/clearmatics/bn256"
 )
 
 // CurvePoint represents a point on an elliptic curve
 type CurvePoint struct {
-	Z *bn256.G1 `json:""`
+	z *bn256.G1 `json:""`
 	/*
 	X *big.Int `json:"x"`
 	Y *big.Int `json:"y"`
@@ -26,43 +26,41 @@ func (c CurvePoint) Equals(d *CurvePoint) bool {
 	return bytes.Compare(c.Marshal(), d.Marshal()) == 0;
 }
 
-func (c CurvePoint) InitFromXY (x *big.Int, y *big.Int) (*CurvePoint, bool) {
-	// XXX: Pack into format that Unmarshal accepts...
-	// TODO: split bn256.G1.Unmarshal into Unmarshal + SetFromXY
-	const numBytes = 256/8
-	packed := make([]byte, numBytes*2)
-	xBytes := x.Bytes()
-	yBytes := y.Bytes()
-	copy(packed[1*numBytes-len(xBytes):], xBytes)
-	copy(packed[2*numBytes-len(yBytes):], yBytes)
-	z, isOk := new(bn256.G1).Unmarshal(packed)
+func (c CurvePoint) Prime() *big.Int {
+	return bn256.P
+}
+
+func (c CurvePoint) Order() *big.Int {
+	return bn256.Order
+}
+
+func (c CurvePoint) SetFromXY (x *big.Int, y *big.Int) (*CurvePoint, bool) {
+	z, isOk := new(bn256.G1).SetFromXY(x, y)
 	if isOk {
-		c.Z = z
+		c.z = z
 	}
 	return &c, isOk
 }
 
 func (c CurvePoint) Marshal() []byte {
-	return c.Z.Marshal()
+	return c.z.Marshal()
 }
 
 func (c CurvePoint) Unmarshal(m []byte) bool {
-	_, ret := c.Z.Unmarshal(m)
+	_, ret := c.z.Unmarshal(m)
 	return ret
-}
-
-func (c CurvePoint) InitFromSecret (x *big.Int) {
-	c.Z = new(bn256.G1).ScalarBaseMult(x)
 }
 
 // IsOnCurve returns true if point is on curve
 func (c CurvePoint) IsOnCurve() bool {
-	return false
+	p := c.z.Point()
+	p.MakeAffine(nil)
+	return p.IsOnCurve()
 	//return group.IsOnCurve(c.X, c.Y)
 }
 
 func (c CurvePoint) String() string {
-	return fmt.Sprintf("CurvePoint(%v)", c.Z)
+	return fmt.Sprintf("CurvePoint(%v)", c.z)
 }
 
 // ScalarBaseMult returns the product x where the result and base are the x coordinates of group points, base is the standard generator
@@ -76,7 +74,7 @@ func (c CurvePoint) ScalarBaseMult(x *big.Int) CurvePoint {
 
 // ScalarMult returns the product c*x where the result and base are the x coordinates of group points 
 func (c CurvePoint) ScalarMult(x *big.Int) CurvePoint {
-	return CurvePoint{new(bn256.G1).ScalarMult(c.Z, x)}
+	return CurvePoint{new(bn256.G1).ScalarMult(c.z, x)}
 	/*
 	px, py := group.ScalarMult(c.X, c.Y, x.Bytes())
 	return CurvePoint{px, py}
@@ -85,7 +83,7 @@ func (c CurvePoint) ScalarMult(x *big.Int) CurvePoint {
 
 // Add performs an addition of two elliptic curve points
 func (c CurvePoint) Add(y CurvePoint) CurvePoint {
-	return CurvePoint{new(bn256.G1).Add(c.Z, y.Z)}
+	return CurvePoint{new(bn256.G1).Add(c.z, y.z)}
 	/*
 	px, py := group.Add(c.X, c.Y, y.X, y.Y)
 	return CurvePoint{px, py}
@@ -111,16 +109,13 @@ func (c CurvePoint) HashPointAdd(hashSP CurvePoint, tj *big.Int, cj *big.Int) Cu
 // ParseCurvePoint parses string representations of X and Y points
 // these can be hex or base10 encoded
 func ParseCurvePoint( pointX string, pointY string ) *CurvePoint {
-	/*
-	X, errX := new(big.Int).SetString(pointX, 0)
-	Y, errY := new(big.Int).SetString(pointY, 0)
+	x, errX := new(big.Int).SetString(pointX, 0)
+	y, errY := new(big.Int).SetString(pointY, 0)
 	if ! errX || ! errY {
 		return nil;
 	}
 
-	return &CurvePoint{X, Y}
-	*/
-
-	// TODO: G1.Marshal() returns 512bit in bytes
-	return nil
+	c := CurvePoint{}
+	c.SetFromXY(x, y)
+	return &c
 }

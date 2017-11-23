@@ -9,8 +9,9 @@ import (
 	"crypto/sha256"
 	"errors"
 	"math/big"
-//	secp "github.com/btcsuite/btcd/btcec"
-	"golang.org/x/crypto/bn256"
+	"fmt"
+	//"fmt"
+	//secp "github.com/btcsuite/btcd/btcec"
 )
 
 //var group *secp.KoblitzCurve
@@ -31,14 +32,60 @@ func convert(data []byte) *big.Int {
 	return z
 }
 
-func hashToCurve(s []byte) (*CurvePoint, error) {
-	q := bn256.Order //group.P
+// SECP:
+// https://github.com/privacypass/challenge-bypass-server/blob/22321cf5b80df873135bacc2131b56cf5c5a2d83/crypto/curve.go
 
+
+
+var curveB = new(big.Int).SetInt64(3)
+
+
+func hashToCurve(s []byte) (*CurvePoint, error) {
+//	q := bn256.Order //group.P
+	q := CurvePoint{}.Prime()
+	//q, _ := new(big.Int).SetString("65000549695646603732796438742359905742825358107623003571877145026864184071783", 10)
+
+	h := sha256.Sum256(s)
+	x := new(big.Int).SetBytes(h[:])
+	x.Mod(x, q)
+
+	for {
+		xxx := new(big.Int).Mul(x, x)
+		xxx.Mul(xxx, x)
+		t := new(big.Int).Add(xxx, curveB)
+
+		y := new(big.Int).ModSqrt(t, q)
+		fmt.Printf("Y = %v\n", y)
+		if y != nil {
+			curveout, isOk := CurvePoint{}.SetFromXY(x, y) // group.IsOnCurve(x, y)
+			if isOk {
+				return curveout, nil
+			}
+		}
+		x.Add(x, bigOne)
+	}
+
+
+	/*
 	x := big.NewInt(0)
 	y := big.NewInt(0)
 	z := big.NewInt(0)
-	z.SetString("57896044618658097711785492504343953926634992332820282019728792003954417335832", 10)
+	z = z.ModInverse(bigTwo, CurvePoint{}.Prime())
+	*/
 
+	/*
+	group := secp.S256()
+	L := big.NewInt(0)
+	L = L.ModInverse(bigTwo, group.P)
+	M := new(big.Int)
+	M.SetString("57896044618658097711785492504343953926634992332820282019728792003954417335832", 10)
+	fmt.Printf("\nLUL Z = %v  P = %v  L = %v M = %v\n", z, group.P, L, M)
+	*/
+
+	//fmt.Printf("Z = %v  P = %v\n", z, CurvePoint{}.Prime())
+	//z.SetString("57896044618658097711785492504343953926634992332820282019728792003954417335832", 10)
+
+	/*
 	array := sha256.Sum256(s) // Sum outputs an array of 32 bytes :)
 	x = convert(array[:])
 	for true {
@@ -50,12 +97,15 @@ func hashToCurve(s []byte) (*CurvePoint, error) {
 		y.Rsh(y, 2)
 		y.Exp(xcube7, y, q)
 		z = z.Exp(y, big.NewInt(2), q)
-		curveout, isOk := CurvePoint{}.InitFromXY(x, y) // group.IsOnCurve(x, y)
+
+		curveout, isOk := CurvePoint{}.SetFromXY(x, y) // group.IsOnCurve(x, y)
 		if isOk {
 			return curveout, nil
 		}
 		x.Add(x, big.NewInt(1))
 	}
+	*/
+
 	return nil, errors.New("no curve point found")
 }
 
@@ -105,10 +155,11 @@ func (r *Ring) PubKeyIndex(pk CurvePoint) int {
 
 // Signature generates a signature
 func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignature, error) {
-	N := bn256.Order //group.N
+	N := CurvePoint{}.Order() //group.N
 
 	mR := r.Bytes()
 	byteslist := append(mR, message...)
+	fmt.Printf("Derp")
 	hashp, _ := hashToCurve(byteslist)
 	pk.Mod(pk, N)
 	hashSP := hashp.ScalarMult(pk)
@@ -209,7 +260,7 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 	tau := sigma.Tau
 	ctlist := sigma.Ctlist
 	n := len(r.PubKeys)
-	N := bn256.Order //group.N
+	N := CurvePoint{}.Order() //group.N
 	//var hashlist []*big.Int
 
 	mR := r.Bytes()

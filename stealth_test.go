@@ -24,6 +24,24 @@ func generatePairOfTestKeys(t *testing.T) (*CurvePoint, *big.Int, *CurvePoint, *
 }
 
 
+// TestSharedSecret verifies that a shared secret can be derived from two curve points
+func TestSharedSecret (t *testing.T) {
+    Ap, As, Bp, Bs := generatePairOfTestKeys(t)
+    if Ap == nil || As == nil {
+        t.Fatal("failed to generate pair of test keys")
+    }
+
+    sharedSecret := deriveSharedSecret(As, Bp)
+    if sharedSecret == nil {
+        t.Fatal("nil shared secret")
+    }
+    sharedSecretCheck := deriveSharedSecret(Bs, Ap)
+    if 0 != bytes.Compare(sharedSecret, sharedSecretCheck) {
+        t.Fatal("Shared secret incorrect")
+    }
+}
+
+
 func TestStealthAddressPrimitives(t *testing.T) {
     Ap, As, Bp, Bs := generatePairOfTestKeys(t)
 
@@ -36,7 +54,15 @@ func TestStealthAddressPrimitives(t *testing.T) {
     
     // stealth address on A side
     spA := StealthPubDerive(Bp, sharedSecret)
+    if spA == nil {
+        t.Fatal("Failed to derive stealth public key for B from shared secret")
+    }
+    
     ssA := StealthPrivDerive(As, sharedSecret)
+    if ssA == nil {
+        t.Fatal("Failed to derive stealth private key for A from shared secret")
+    }
+
     ssAp := derivePublicKey(ssA)
 
     // stealth address on B side
@@ -87,8 +113,8 @@ var testBytes = []byte("test")
 func TestStealthInvalidSecret(t *testing.T) {
     _, _, Bp, _ := generatePairOfTestKeys(t)
 
-    var nPlusOne = new(big.Int).Add(group.N, bigOne)
-    var invalidSecretKeys = []*big.Int{bigZero, group.N, nPlusOne}
+    var nPlusOne = new(big.Int).Add(CurvePoint{}.Order(), bigOne)
+    var invalidSecretKeys = []*big.Int{bigZero, CurvePoint{}.Order(), nPlusOne}
 
     for _, secretKey := range invalidSecretKeys {
         if nil != StealthPrivDerive(secretKey, testBytes) {
@@ -104,7 +130,7 @@ func TestStealthInvalidSecret(t *testing.T) {
 
 func TestStealthInvalidPublic(t *testing.T) {
     _, As, _, _ := generatePairOfTestKeys(t)
-    var invalidSecretKeys = []*big.Int{bigZero, group.N}
+    var invalidSecretKeys = []*big.Int{bigZero, CurvePoint{}.Order()}
 
     for _, secretKey := range invalidSecretKeys {
         publicKey := derivePublicKey(secretKey)
