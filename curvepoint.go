@@ -9,15 +9,12 @@ import (
 	"fmt"
 	"math/big"
 	"github.com/clearmatics/bn256"
+	"crypto/sha256"
 )
 
 // CurvePoint represents a point on an elliptic curve
 type CurvePoint struct {
 	z *bn256.G1 `json:""`
-	/*
-	X *big.Int `json:"x"`
-	Y *big.Int `json:"y"`
-	*/
 }
 
 // Equals returns true if X and Y of both curve points are equal
@@ -34,12 +31,20 @@ func (c CurvePoint) Order() *big.Int {
 	return bn256.Order
 }
 
-func (c CurvePoint) SetFromXY (x *big.Int, y *big.Int) (*CurvePoint, bool) {
+func (c CurvePoint) GetXY() (*big.Int, *big.Int) {
+	if c.z != nil {
+		return c.z.GetXY()
+	}
+	return nil, nil
+}
+
+func (c CurvePoint) SetFromXY (x *big.Int, y *big.Int) *CurvePoint {
 	z, isOk := new(bn256.G1).SetFromXY(x, y)
 	if isOk {
 		c.z = z
+		return &c
 	}
-	return &c, isOk
+	return nil
 }
 
 func (c CurvePoint) Marshal() []byte {
@@ -63,31 +68,43 @@ func (c CurvePoint) String() string {
 	return fmt.Sprintf("CurvePoint(%v)", c.z)
 }
 
+func NewCurvePointFromHash(s []byte) *CurvePoint {
+	q := CurvePoint{}.Prime()
+
+	h := sha256.Sum256(s)
+	x := new(big.Int).SetBytes(h[:])
+	x.Mod(x, q)
+
+	// TODO: limit number of iterations
+	for {
+		xxx := new(big.Int).Mul(x, x)
+		xxx.Mul(xxx, x)
+		t := new(big.Int).Add(xxx, curveB)
+
+		y := new(big.Int).ModSqrt(t, q)
+		if y != nil {
+			curveout := CurvePoint{}.SetFromXY(x, y)
+			if curveout != nil {
+				return curveout
+			}
+		}
+		x.Add(x, bigOne)
+	}
+}
+
 // ScalarBaseMult returns the product x where the result and base are the x coordinates of group points, base is the standard generator
 func (c CurvePoint) ScalarBaseMult(x *big.Int) CurvePoint {
 	return CurvePoint{new(bn256.G1).ScalarBaseMult(x)}
-	/*
-	px, py := group.ScalarBaseMult(x.Bytes())
-	return CurvePoint{px, py}
-	*/
 }
 
 // ScalarMult returns the product c*x where the result and base are the x coordinates of group points 
 func (c CurvePoint) ScalarMult(x *big.Int) CurvePoint {
 	return CurvePoint{new(bn256.G1).ScalarMult(c.z, x)}
-	/*
-	px, py := group.ScalarMult(c.X, c.Y, x.Bytes())
-	return CurvePoint{px, py}
-	*/
 }
 
 // Add performs an addition of two elliptic curve points
 func (c CurvePoint) Add(y CurvePoint) CurvePoint {
 	return CurvePoint{new(bn256.G1).Add(c.z, y.z)}
-	/*
-	px, py := group.Add(c.X, c.Y, y.X, y.Y)
-	return CurvePoint{px, py}
-	*/
 }
 
 // ParameterPointAdd returns the addition of c scaled by cj and tj as a curve point
