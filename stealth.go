@@ -141,7 +141,6 @@ func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
 //    Px,Py ← g^S
 //
 func derivePublicKey (privateKey *big.Int) CurvePoint {
-    //return CurvePoint{new(bn256.G1).ScalarBaseMult(privateKey)}
     return CurvePoint{}.ScalarBaseMult(privateKey)
 }
 
@@ -158,7 +157,6 @@ func derivePublicKey (privateKey *big.Int) CurvePoint {
 //
 func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
     // See: RFC5903 (Section 9)
-    //return theirPub.ScalarMult(myPriv).X.Bytes()
     return theirPub.ScalarMult(myPriv).Marshal()[:32]
 }
 

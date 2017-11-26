@@ -111,6 +111,7 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 	hasha := sha256.Sum256(byteslist)
 	hashb := new(big.Int).SetBytes(hasha[:])
 	hashb.Mod(hashb, N)
+	
 	csum.Mod(csum, N)
 	c := new(big.Int).Sub(hashb, csum)
 	c.Mod(c, N)
@@ -166,14 +167,17 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 		tj := ctlist[2*j+1]
 		cj.Mod(cj, N)
 		tj.Mod(tj, N)
-		H := hashp.ScalarMult(tj)             //H(m||R)^t
-		gt := CurvePoint{}.ScalarBaseMult(tj) //g^t
+
 		yc := r.PubKeys[j].ScalarMult(cj)     // y^c = g^(xc)
-		tauc := tau.ScalarMult(cj)            //H(m||R)^(xc)
+		gt := CurvePoint{}.ScalarBaseMult(tj) // g^t + y^c
 		gt = gt.Add(yc)
-		H = H.Add(tauc) // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
 		byteslist = append(byteslist, gt.Marshal()...)
+		
+		tauc := tau.ScalarMult(cj)            //H(m||R)^(xc)
+		H := hashp.ScalarMult(tj)             //H(m||R)^t
+		H = H.Add(tauc) // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
 		byteslist = append(byteslist, H.Marshal()...)
+
 		csum.Add(csum, cj)
 	}
 
@@ -182,8 +186,6 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 
 	hashhash.Mod(hashhash, N)
 	csum.Mod(csum, N)
-	if csum.Cmp(hashhash) == 0 {
-		return true
-	}
-	return false
+
+	return csum.Cmp(hashhash) == 0
 }

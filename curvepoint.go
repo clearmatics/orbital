@@ -7,20 +7,34 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"encoding/json"
 	"crypto/rand"
 	"math/big"
 	"github.com/clearmatics/bn256"
 	"crypto/sha256"
 )
 
+
 // CurvePoint represents a point on an elliptic curve
 type CurvePoint struct {
-	z *bn256.G1 `json:""`
+	z *bn256.G1
 }
+
+
+func (c CurvePoint) MarshalJSON() ([]byte, error) {
+	x, y := c.GetXY()
+	return json.Marshal(&struct {
+		X *big.Int `json:"x"`
+		Y *big.Int `json:"y"`
+	}{
+		X: x,
+		Y: y,
+	})
+}
+
 
 // Equals returns true if X and Y of both curve points are equal
 func (c CurvePoint) Equals(d *CurvePoint) bool {
-	// 0 == c.X.Cmp(d.X) && 0 == c.Y.Cmp(d.Y)
 	return bytes.Compare(c.Marshal(), d.Marshal()) == 0;
 }
 
@@ -48,7 +62,7 @@ func randomPositiveBelow (below *big.Int) *big.Int {
             return nil
         }
 
-        // x >= 1 || x < below
+        // x > 0 && x < below
         if isBetween(number, bigZero, below) {
         	return number
         }
@@ -67,7 +81,11 @@ func (c CurvePoint) RandomP() *big.Int {
 
 func (c CurvePoint) GetXY() (*big.Int, *big.Int) {
 	if c.z != nil {
-		return c.z.GetXY()
+		// TODO: c.z.MakeAffine(nil) instead of marshal! Less byte buffer copying
+		buffer := c.z.Marshal()
+		x := new(big.Int).SetBytes(buffer[:32])
+		y := new(big.Int).SetBytes(buffer[32:])
+		return x, y
 	}
 	return nil, nil
 }
@@ -95,27 +113,32 @@ func (c CurvePoint) IsOnCurve() bool {
 	p := c.z.Point()
 	p.MakeAffine(nil)
 	return p.IsOnCurve()
-	//return group.IsOnCurve(c.X, c.Y)
 }
 
 func (c CurvePoint) String() string {
 	return fmt.Sprintf("CurvePoint(%v)", c.z)
 }
 
+// NewCurvePointFromHash implements the 'try-and-increment' method of
+// hashing into a curve which preserves random oracle proofs of security
+//
+// See: https://www.normalesup.org/~tibouchi/papers/bnhash-scis.pdf
+//
 func NewCurvePointFromHash(s []byte) *CurvePoint {
-	q := CurvePoint{}.Prime()
+	P := CurvePoint{}.Prime()
+	N := CurvePoint{}.Order()
 
 	h := sha256.Sum256(s)
 	x := new(big.Int).SetBytes(h[:])
-	x.Mod(x, q)
+	x.Mod(x, N)
 
-	// TODO: limit number of iterations
+	// TODO: limit number of iterations?
 	for {
 		xxx := new(big.Int).Mul(x, x)
 		xxx.Mul(xxx, x)
-		t := new(big.Int).Add(xxx, curveB)
+		t := new(big.Int).Add(xxx, 3)
 
-		y := new(big.Int).ModSqrt(t, q)
+		y := new(big.Int).ModSqrt(t, P)
 		if y != nil {
 			curveout := CurvePoint{}.SetFromXY(x, y)
 			if curveout != nil {
