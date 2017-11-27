@@ -26,15 +26,26 @@ func convert(data []byte) *big.Int {
 var curveB = new(big.Int).SetInt64(3)
 
 
-// Bytes converts a public key x,y pair slice to bytes
-func (r Ring) Bytes() []byte {
-	var b []byte
+func safeXORHash(dst *[sha256.Size]byte, a, b [sha256.Size]byte) int {
+  	n := len(a)
+  	if len(b) < n {
+  		n = len(b)
+  	}
+  	for i := 0; i < n; i++ {
+  		dst[i] = a[i] ^ b[i]
+  	}
+  	return n
+  }
+
+func (r Ring) PublicKeysHashed() [sha256.Size]byte {
+	var out [sha256.Size]byte
 
 	for i := 0; i < len(r.PubKeys); i++ {
-		b = append(b, r.PubKeys[i].Marshal()...)
+		hashed := sha256.Sum256(r.PubKeys[i].Marshal())		
+		safeXORHash(&out, out, hashed)
 	}
 
-	return b
+	return out
 }
 
 // Generate creates public and private keypairs for a ring with the size of n
@@ -68,10 +79,10 @@ func (r *Ring) PubKeyIndex(pk CurvePoint) int {
 func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignature, error) {
 	N := CurvePoint{}.Order()
 
-	mR := r.Bytes()
-	byteslist := append(mR, message...)
-	hashp := NewCurvePointFromHash(byteslist)
-	// TODO: checkk hashp
+	mR := r.PublicKeysHashed()
+	// message = token||denomination is 64bytes 
+	safeXORHash(&mR, mR, sha256.Sum256(message))
+	hashp := NewCurvePointFromHash(mR)
 
 	pk.Mod(pk, N)
 	hashSP := hashp.ScalarMult(pk)
@@ -80,6 +91,7 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 	var ctlist []*big.Int   //This has to be 2n so here we have n = 4 so 2n = 8 :)
 	var a, b CurvePoint
 	var ri *big.Int
+
 	csum := big.NewInt(0)
 
 	for j := 0; j < n; j++ {
@@ -104,14 +116,13 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 			a = CurvePoint{}.ScalarBaseMult(ri)
 			b = hashp.ScalarMult(ri)
 		}
-		byteslist = append(byteslist, a.Marshal()...)
-		byteslist = append(byteslist, b.Marshal()...)
+
+		safeXORHash(&mR, mR, sha256.Sum256(append(a.Marshal(), b.Marshal()...)))
 	}
 
-	hasha := sha256.Sum256(byteslist)
-	hashb := new(big.Int).SetBytes(hasha[:])
+	hashb := new(big.Int).SetBytes(mR[:])
 	hashb.Mod(hashb, N)
-	
+
 	csum.Mod(csum, N)
 	c := new(big.Int).Sub(hashb, csum)
 	c.Mod(c, N)
@@ -155,9 +166,10 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 	n := len(r.PubKeys)
 	N := CurvePoint{}.Order() //group.N
 
-	mR := r.Bytes()
-	byteslist := append(mR, message...)
-	hashp := NewCurvePointFromHash(byteslist)
+	mR := r.PublicKeysHashed()
+	// message = token||denomination is 64bytes 
+	safeXORHash(&mR, mR, sha256.Sum256(message))
+	hashp := NewCurvePointFromHash(mR)
 	// TODO: check hashp
 
 	csum := big.NewInt(0)
@@ -171,21 +183,18 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 		yc := r.PubKeys[j].ScalarMult(cj)     // y^c = g^(xc)
 		gt := CurvePoint{}.ScalarBaseMult(tj) // g^t + y^c
 		gt = gt.Add(yc)
-		byteslist = append(byteslist, gt.Marshal()...)
 		
 		tauc := tau.ScalarMult(cj)            //H(m||R)^(xc)
 		H := hashp.ScalarMult(tj)             //H(m||R)^t
 		H = H.Add(tauc) // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
-		byteslist = append(byteslist, H.Marshal()...)
+
+		safeXORHash(&mR, mR, sha256.Sum256(append(gt.Marshal(), H.Marshal()...)))
 
 		csum.Add(csum, cj)
 	}
 
-	hash := sha256.Sum256(byteslist)
-	hashhash := new(big.Int).SetBytes(hash[:])
-
-	hashhash.Mod(hashhash, N)
+	hashout := new(big.Int).SetBytes(mR[:])
+	hashout.Mod(hashout, N)
 	csum.Mod(csum, N)
-
-	return csum.Cmp(hashhash) == 0
+	return csum.Cmp(hashout) == 0
 }

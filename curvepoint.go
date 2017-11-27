@@ -119,16 +119,19 @@ func (c CurvePoint) String() string {
 	return fmt.Sprintf("CurvePoint(%v)", c.z)
 }
 
+func NewCurvePointFromString(s []byte) *CurvePoint {
+	return NewCurvePointFromHash(sha256.Sum256(s))
+}
+
 // NewCurvePointFromHash implements the 'try-and-increment' method of
 // hashing into a curve which preserves random oracle proofs of security
 //
 // See: https://www.normalesup.org/~tibouchi/papers/bnhash-scis.pdf
 //
-func NewCurvePointFromHash(s []byte) *CurvePoint {
+func NewCurvePointFromHash(h [sha256.Size]byte) *CurvePoint {
 	P := CurvePoint{}.Prime()
 	N := CurvePoint{}.Order()
 
-	h := sha256.Sum256(s)
 	x := new(big.Int).SetBytes(h[:])
 	x.Mod(x, N)
 
@@ -136,7 +139,7 @@ func NewCurvePointFromHash(s []byte) *CurvePoint {
 	for {
 		xxx := new(big.Int).Mul(x, x)
 		xxx.Mul(xxx, x)
-		t := new(big.Int).Add(xxx, 3)
+		t := new(big.Int).Add(xxx, curveB)
 
 		y := new(big.Int).ModSqrt(t, P)
 		if y != nil {
