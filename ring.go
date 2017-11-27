@@ -26,23 +26,11 @@ func convert(data []byte) *big.Int {
 var curveB = new(big.Int).SetInt64(3)
 
 
-func safeXORHash(dst *[sha256.Size]byte, a, b [sha256.Size]byte) int {
-  	n := len(a)
-  	if len(b) < n {
-  		n = len(b)
-  	}
-  	for i := 0; i < n; i++ {
-  		dst[i] = a[i] ^ b[i]
-  	}
-  	return n
-  }
-
 func (r Ring) PublicKeysHashed() [sha256.Size]byte {
 	var out [sha256.Size]byte
 
 	for i := 0; i < len(r.PubKeys); i++ {
-		hashed := sha256.Sum256(r.PubKeys[i].Marshal())		
-		safeXORHash(&out, out, hashed)
+		out = sha256.Sum256(append(out[:], r.PubKeys[i].Marshal()...))
 	}
 
 	return out
@@ -79,9 +67,9 @@ func (r *Ring) PubKeyIndex(pk CurvePoint) int {
 func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignature, error) {
 	N := CurvePoint{}.Order()
 
-	mR := r.PublicKeysHashed()
 	// message = token||denomination is 64bytes 
-	safeXORHash(&mR, mR, sha256.Sum256(message))
+	pubkeys_hashed := r.PublicKeysHashed()
+	mR := sha256.Sum256(append(pubkeys_hashed[:], message...))
 	hashp := NewCurvePointFromHash(mR)
 
 	pk.Mod(pk, N)
@@ -117,7 +105,7 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 			b = hashp.ScalarMult(ri)
 		}
 
-		safeXORHash(&mR, mR, sha256.Sum256(append(a.Marshal(), b.Marshal()...)))
+		mR = sha256.Sum256(append(mR[:], append(a.Marshal(), b.Marshal()...)...))
 	}
 
 	hashb := new(big.Int).SetBytes(mR[:])
@@ -166,9 +154,9 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 	n := len(r.PubKeys)
 	N := CurvePoint{}.Order() //group.N
 
-	mR := r.PublicKeysHashed()
 	// message = token||denomination is 64bytes 
-	safeXORHash(&mR, mR, sha256.Sum256(message))
+	pubkeys_hashed := r.PublicKeysHashed()
+	mR := sha256.Sum256(append(pubkeys_hashed[:], message...))
 	hashp := NewCurvePointFromHash(mR)
 	// TODO: check hashp
 
@@ -188,7 +176,7 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 		H := hashp.ScalarMult(tj)             //H(m||R)^t
 		H = H.Add(tauc) // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
 
-		safeXORHash(&mR, mR, sha256.Sum256(append(gt.Marshal(), H.Marshal()...)))
+		mR = sha256.Sum256(append(mR[:], append(gt.Marshal(), H.Marshal()...)...))
 
 		csum.Add(csum, cj)
 	}
