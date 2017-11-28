@@ -149,7 +149,7 @@ func derivePublicKey (privateKey *big.Int) CurvePoint {
 //
 //    (Ax,_) ← (Bpx,Bpy) · As
 //    (Bx,_) ← (Apx,Apy) · Bs
-//    Ax ≡ Bx
+//    Ax = Bx
 //
 // Where As and Bs are secret keys, (Bpx,Bpy) and (Apx,Apy) are the public
 // keys of A and B. (Ax,_) and (Bx,_) are points, and both Ax and Ay are equal.

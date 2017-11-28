@@ -69,8 +69,10 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 
 	// message = token||denomination is 64bytes 
 	pubkeys_hashed := r.PublicKeysHashed()
-	mR := sha256.Sum256(append(pubkeys_hashed[:], message...))
-	hashp := NewCurvePointFromHash(mR)
+	hashp := NewCurvePointFromHash(sha256.Sum256(append(pubkeys_hashed[:], message...)))
+
+	var hash_acc [32]byte
+	copy(hash_acc[:], hashp.Marshal()[:32])
 
 	pk.Mod(pk, N)
 	hashSP := hashp.ScalarMult(pk)
@@ -105,10 +107,10 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 			b = hashp.ScalarMult(ri)
 		}
 
-		mR = sha256.Sum256(append(mR[:], append(a.Marshal(), b.Marshal()...)...))
+		hash_acc = sha256.Sum256(append(hash_acc[:], append(a.Marshal(), b.Marshal()...)...))
 	}
 
-	hashb := new(big.Int).SetBytes(mR[:])
+	hashb := new(big.Int).SetBytes(hash_acc[:])
 	hashb.Mod(hashb, N)
 
 	csum.Mod(csum, N)
@@ -156,9 +158,10 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 
 	// message = token||denomination is 64bytes 
 	pubkeys_hashed := r.PublicKeysHashed()
-	mR := sha256.Sum256(append(pubkeys_hashed[:], message...))
-	hashp := NewCurvePointFromHash(mR)
-	// TODO: check hashp
+	hashp := NewCurvePointFromHash(sha256.Sum256(append(pubkeys_hashed[:], message...)))
+
+	var hash_acc [32]byte
+	copy(hash_acc[:], hashp.Marshal()[:32])
 
 	csum := big.NewInt(0)
 
@@ -176,12 +179,12 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 		H := hashp.ScalarMult(tj)             //H(m||R)^t
 		H = H.Add(tauc) // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
 
-		mR = sha256.Sum256(append(mR[:], append(gt.Marshal(), H.Marshal()...)...))
+		hash_acc = sha256.Sum256(append(hash_acc[:], append(gt.Marshal(), H.Marshal()...)...))
 
 		csum.Add(csum, cj)
 	}
 
-	hashout := new(big.Int).SetBytes(mR[:])
+	hashout := new(big.Int).SetBytes(hash_acc[:])
 	hashout.Mod(hashout, N)
 	csum.Mod(csum, N)
 	return csum.Cmp(hashout) == 0
