@@ -67,15 +67,18 @@ func (r *Ring) PubKeyIndex(pk CurvePoint) int {
 func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignature, error) {
 	N := CurvePoint{}.Order()
 
-	// message = token||denomination is 64bytes 
-	pubkeys_hashed := r.PublicKeysHashed()
-	hashp := NewCurvePointFromHash(sha256.Sum256(append(pubkeys_hashed[:], message...)))
+	// Message is a 256 bit token which uniquely identifies the Ring and the public keys
+	// of all of its participants
+	var message_hash [32]byte
+	copy(message_hash[:], message)
+	hashp := NewCurvePointFromHash(message_hash)
 
-	var hash_acc [32]byte
-	copy(hash_acc[:], hashp.Marshal()[:32])
-
+	// Calculate Tau
 	pk.Mod(pk, N)
 	hashSP := hashp.ScalarMult(pk)
+
+	// hashout = H(hash.X, tau)
+	hash_acc := sha256.Sum256(append(hashp.Marshal()[:32], hashSP.Marshal()...))
 
 	n := len(r.PubKeys)
 	var ctlist []*big.Int   //This has to be 2n so here we have n = 4 so 2n = 8 :)
@@ -133,7 +136,6 @@ func (r *Ring) Signatures(message []byte) ([]RingSignature, error) {
 	var signaturesArr []RingSignature
 
 	for i, privKey := range r.PrivKeys {
-		//pub := CurvePoint{}.ScalarBaseMult(privKey)
 		pub := r.PubKeys[i]
 		signerNumber := r.PubKeyIndex(pub)
 		signature, err := r.Signature(privKey, message, signerNumber)
@@ -156,12 +158,11 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 	n := len(r.PubKeys)
 	N := CurvePoint{}.Order() //group.N
 
-	// message = token||denomination is 64bytes 
-	pubkeys_hashed := r.PublicKeysHashed()
-	hashp := NewCurvePointFromHash(sha256.Sum256(append(pubkeys_hashed[:], message...)))
+	var message_hash [32]byte
+	copy(message_hash[:], message)
+	hashp := NewCurvePointFromHash(message_hash)
 
-	var hash_acc [32]byte
-	copy(hash_acc[:], hashp.Marshal()[:32])
+	hash_acc := sha256.Sum256(append(hashp.Marshal()[:32], tau.Marshal()...))
 
 	csum := big.NewInt(0)
 
@@ -182,6 +183,7 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 		hash_acc = sha256.Sum256(append(hash_acc[:], append(gt.Marshal(), H.Marshal()...)...))
 
 		csum.Add(csum, cj)
+		csum.Mod(csum, N)
 	}
 
 	hashout := new(big.Int).SetBytes(hash_acc[:])

@@ -141,7 +141,8 @@ func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
 //    Px,Py ← g^S
 //
 func derivePublicKey (privateKey *big.Int) CurvePoint {
-    return CurvePoint{}.ScalarBaseMult(privateKey)
+    p := CurvePoint{}.ScalarBaseMult(privateKey)
+    return p
 }
 
 

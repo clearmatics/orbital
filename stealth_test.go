@@ -143,7 +143,7 @@ func TestStealthInvalidPublic(t *testing.T) {
 
         // Deliberately create an invalid curve point from a valid one
         x, y := Bp.GetXY()
-        alteredPublicKey := CurvePoint{}.SetFromXY(new(big.Int).Add(x, bigOne), new(big.Int).Add(y, bigOne))
+        alteredPublicKey := new(CurvePoint).SetFromXY(new(big.Int).Add(x, bigOne), new(big.Int).Add(y, bigOne))
         if alteredPublicKey != nil {
             if StealthPubDerive(alteredPublicKey, testBytes) != nil {
                 t.Fatal(Bp, " + (1,-1) accepted as public key to StealthPubDerive")

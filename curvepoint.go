@@ -7,6 +7,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"errors"
 	"encoding/json"
 	"crypto/rand"
 	"math/big"
@@ -21,7 +22,7 @@ type CurvePoint struct {
 }
 
 
-func (c CurvePoint) MarshalJSON() ([]byte, error) {
+func (c *CurvePoint) MarshalJSON() ([]byte, error) {
 	x, y := c.GetXY()
 	return json.Marshal(&struct {
 		X *big.Int `json:"x"`
@@ -30,6 +31,21 @@ func (c CurvePoint) MarshalJSON() ([]byte, error) {
 		X: x,
 		Y: y,
 	})
+}
+
+func (c *CurvePoint) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		X *big.Int `json:"x"`
+		Y *big.Int `json:"y"`
+	}
+	if err := json.Unmarshal(data, &aux); err != nil {
+		return err
+	}
+	if c.SetFromXY(aux.X, aux.Y) == nil {
+		return errors.New("Failed to deserialize CurvePoint")
+	}
+	c.SetFromXY(aux.X, aux.Y)
+	return nil
 }
 
 
@@ -80,21 +96,33 @@ func (c CurvePoint) RandomP() *big.Int {
 }
 
 func (c CurvePoint) GetXY() (*big.Int, *big.Int) {
+	// Each value is a 256-bit number.	
+	const numBytes = 256 / 8
 	if c.z != nil {
-		// TODO: c.z.MakeAffine(nil) instead of marshal! Less byte buffer copying
-		buffer := c.z.Marshal()
-		x := new(big.Int).SetBytes(buffer[:32])
-		y := new(big.Int).SetBytes(buffer[32:])
+		// TODO: use c.z.CurvePoints()
+		m := c.z.Marshal()
+		x := new(big.Int).SetBytes(m[0*numBytes : 1*numBytes])
+		y := new(big.Int).SetBytes(m[1*numBytes : 2*numBytes])
 		return x, y
 	}
 	return nil, nil
 }
 
-func (c CurvePoint) SetFromXY (x *big.Int, y *big.Int) *CurvePoint {
-	z, isOk := new(bn256.G1).SetFromXY(x, y)
+func (c *CurvePoint) SetFromXY (x *big.Int, y *big.Int) *CurvePoint {
+	const numBytes = 256 / 8
+
+	// XXX: there's no equivalent to SetCurvePoints, other than Unmarshal
+	xBytes := new(big.Int).Mod(x, bn256.P).Bytes()
+	yBytes := new(big.Int).Mod(y, bn256.P).Bytes()
+
+	m := make([]byte, numBytes*2)
+	copy(m[1*numBytes-len(xBytes):], xBytes)
+	copy(m[2*numBytes-len(yBytes):], yBytes)
+
+	z, isOk := new(bn256.G1).Unmarshal(m)
 	if isOk {
 		c.z = z
-		return &c
+		return c
 	}
 	return nil
 }
@@ -110,9 +138,7 @@ func (c CurvePoint) Unmarshal(m []byte) bool {
 
 // IsOnCurve returns true if point is on curve
 func (c CurvePoint) IsOnCurve() bool {
-	p := c.z.Point()
-	p.MakeAffine(nil)
-	return p.IsOnCurve()
+	return c.z.IsOnCurve()
 }
 
 func (c CurvePoint) String() string {
@@ -126,27 +152,42 @@ func NewCurvePointFromString(s []byte) *CurvePoint {
 // NewCurvePointFromHash implements the 'try-and-increment' method of
 // hashing into a curve which preserves random oracle proofs of security
 //
-// See: https://www.normalesup.org/~tibouchi/papers/bnhash-scis.pdf
-//
 func NewCurvePointFromHash(h [sha256.Size]byte) *CurvePoint {
 	P := CurvePoint{}.Prime()
 	N := CurvePoint{}.Order()
+
+	// (p+1) / 1
+	A, _ := new(big.Int).SetString("c19139cb84c680a6e14116da060561765e05aa45a1c72a34f082305b61f3f52", 16)
 
 	x := new(big.Int).SetBytes(h[:])
 	x.Mod(x, N)
 
 	// TODO: limit number of iterations?
+	// y² = x³ + B
 	for {
-		xxx := new(big.Int).Mul(x, x)
-		xxx.Mul(xxx, x)
-		t := new(big.Int).Add(xxx, curveB)
+		xx := new(big.Int).Mul(x, x)		// x²
+		xx.Mod(xx, P)
 
-		y := new(big.Int).ModSqrt(t, P)
+		xxx := xx.Mul(xx, x)				// x³
+		xxx.Mod(xxx, P)
+
+		beta := new(big.Int).Add(xxx, curveB)	// x³ + B
+		beta.Mod(beta, P)						
+
+		//y := new(big.Int).ModSqrt(t, P)		// y = √(x³+B)
+		y := new(big.Int).Exp(beta, A, P)
+
 		if y != nil {
-			curveout := CurvePoint{}.SetFromXY(x, y)
-			if curveout != nil {
-				return curveout
+			// Then verify (√(x³+B)%P)² == (x³+B)%P
+			z := new(big.Int).Mul(y, y)
+			z.Mod(z, P)
+			if z.Cmp(beta) == 0 {
+				curveout := new(CurvePoint).SetFromXY(x, y)
+				if curveout != nil {
+					return curveout
+				}
 			}
+
 		}
 		x.Add(x, bigOne)
 	}
