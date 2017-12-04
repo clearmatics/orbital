@@ -8,9 +8,9 @@ Orbital is a command-line tool to generate off-chain data required by [Möbius][
 
 ## Usage
 
-When deployed a Möbius contract will emit a `Ring` that is an arbitrary hex encoded string. This message is signed to make withdrawals from the contract. 
+When deployed a Möbius contract will emit a `RingMessage` that is an arbitrary hex encoded string. This message is signed to make withdrawals from the contract. 
 
-Orbital can be used to generate all data needed to deposit and withdraw from a Möbius smart contract. Providing you have the `Message` value data can be generated as follows. In this example the hex encoded string is given as `291a6780850827fcd8621...`. A ring size of 2 is generated.
+Orbital can be used to generate all data needed to deposit and withdraw from a Möbius smart contract. Providing you have the `RingMessage` value data can be generated as follows. In this example the hex encoded string is given as `291a6780850827fcd8621...`. A ring size of 2 is generated.
 
     ./orbital inputs -n 2 -m 291a6780850827fcd8621d0e5471343831109bc14142ec101527b048bb3d1794
 

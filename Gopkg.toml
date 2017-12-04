@@ -26,5 +26,9 @@
   name = "github.com/btcsuite/btcd"
 
 [[constraint]]
+  branch = "master"
+  name = "github.com/clearmatics/bn256"
+
+[[constraint]]
   name = "github.com/stretchr/testify"
   version = "1.1.4"
