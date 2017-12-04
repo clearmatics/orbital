@@ -76,8 +76,9 @@ func main() {
 		}
 		fmt.Println(string(saJSON))
 
+	// Generates a set of key pairs to be used for use with later operations
 	case "generate":
-		i := generateCmd.Int("n", 0, "The size of the ring to be generated e.g. 4")
+		i := generateCmd.Int("n", 0, "Number of key pairs to be generated, e.g. 4")
 		generateCmd.Parse(os.Args[2:])
 
 		if *i == 0 {
@@ -96,6 +97,7 @@ func main() {
 		fmt.Println(string(ringJSON))
 
 	case "inputs":
+		keys_file := inputsCmd.String("k", "", "Load signing keys from a JSON file")
 		n := inputsCmd.Int("n", 0, "The size of the ring to be generated e.g. 4")
 		m := inputsCmd.String("m", "", "A Hex encoded string to be used to generate the ring")
 		inputsCmd.Parse(os.Args[2:])
@@ -109,17 +111,33 @@ func main() {
 			return
 		}
 
-		alicePub, alicePriv, err := generateKeyPair()
-		bobPub, bobPriv, err := generateKeyPair()
-		stealthSessionAliceToBob := NewStealthSession(alicePriv, bobPub, 0, 1)
-		stealthSessionBobToAlice := NewStealthSession(bobPriv, alicePub, 0, 1)
-
 		ring := &Ring{}
-		ring.Generate(*n)
-		ring.PrivKeys[0] = stealthSessionBobToAlice.MyAddresses[0].Private
-		ring.PubKeys[0] = stealthSessionAliceToBob.TheirAddresses[0].Public
 
-		// TOOO: replace first key with stealth address generated between Alice and Bob
+		var stealthSessionAliceToBob *StealthSession
+		var stealthSessionBobToAlice *StealthSession
+
+		if *keys_file != "" {
+			// Load keys from the ring
+			data, err := ioutil.ReadFile(*keys_file)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Unable to read key file '%v': %v\n", keys_file, err)
+				os.Exit(1)
+			}
+
+			json.Unmarshal(data, &ring)
+		} else {
+			// Otherwise, generate a stealth session, as an example
+			alicePub, alicePriv, _ := generateKeyPair()
+			bobPub, bobPriv, _ := generateKeyPair()
+			stealthSessionAliceToBob := NewStealthSession(alicePriv, bobPub, 0, 1)
+			stealthSessionBobToAlice := NewStealthSession(bobPriv, alicePub, 0, 1)
+
+			// Then generate some random key pairs and integrate our stealth session into the ring
+			ring.Generate(*n)
+			ring.PrivKeys[0] = stealthSessionBobToAlice.MyAddresses[0].Private
+			ring.PubKeys[0] = stealthSessionAliceToBob.TheirAddresses[0].Public			
+		}
+
 
 		decoded, err := hex.DecodeString(*m)
 		if err != nil {
@@ -134,6 +152,7 @@ func main() {
 		inputData := inputData{
 			PubKeys:    ring.PubKeys,
 			Signatures: signatures,
+			Message:    decoded,
 			AliceToBob: stealthSessionAliceToBob,
 			BobToAlice: stealthSessionBobToAlice,
 		}

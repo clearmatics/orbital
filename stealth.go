@@ -6,7 +6,6 @@ package main;
 
 import (
     "crypto/sha256"
-    "crypto/rand"
     "math/big"
 )
 
@@ -39,12 +38,9 @@ type StealthSession struct {
 // generateKeyPair generates a random secret key, then derives the
 // public key from it
 //
-func generateKeyPair () (*CurvePoint, *big.Int, error) {    
-    q := group.P
-    priv, err := rand.Int(rand.Reader, q)
-    if err != nil {
-        return nil, nil, err
-    }
+func generateKeyPair () (*CurvePoint, *big.Int, error) {
+    priv := CurvePoint{}.RandomN()
+    // TODO: verify secret key?
     pub := derivePublicKey(priv)
     return &pub, priv, nil
 }
@@ -53,19 +49,20 @@ func generateKeyPair () (*CurvePoint, *big.Int, error) {
 
 var bigZero = new(big.Int).SetInt64(int64(0))
 var bigOne = new(big.Int).SetInt64(int64(1))
+var bigTwo = new(big.Int).SetInt64(int64(2))
 
 
 // isValidSecretKey checks if the secret can be used to derive
-// a valid curve point
+// a valid curve point, where 0 < S < G
 //
 func isValidSecretKey (secret *big.Int) bool {
     // < 1
-    if secret.Cmp(bigOne) < 0 {
+    if secret.Cmp(bigOne) <= 0 {
         return false
     }
 
     // >= G
-    if secret.Cmp(group.N) >= 0 {
+    if secret.Cmp(CurvePoint{}.Order()) >= 0 {
         return false
     }
 
@@ -115,6 +112,7 @@ func StealthPubDerive(mpk *CurvePoint, secret []byte) *CurvePoint {
 // 
 //   msk = Your secret key
 //   secret = arbitrary number known by both parties
+//
 func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
     if false == isValidSecretKey(msk) {
         return nil
@@ -128,7 +126,7 @@ func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
     Y := new(big.Int).Add(msk, X)
 
     // XXX: can (msk + X) exceed group.N?
-    ssk := new(big.Int).Mod(Y, group.N)
+    ssk := new(big.Int).Mod(Y, CurvePoint{}.Order())
     if ! derivePublicKey(ssk).IsOnCurve() {
         // TODO: return error?
         return nil;
@@ -139,11 +137,12 @@ func StealthPrivDerive(msk *big.Int, secret []byte) *big.Int {
 
 
 // derivePublicKey derives from SecretKey using ScalarBaseMult:
-//o
-//    Pa,Pb ← g^S
+//
+//    Px,Py ← g^S
 //
 func derivePublicKey (privateKey *big.Int) CurvePoint {
-    return CurvePoint{}.ScalarBaseMult(privateKey)
+    p := CurvePoint{}.ScalarBaseMult(privateKey)
+    return p
 }
 
 
@@ -151,17 +150,15 @@ func derivePublicKey (privateKey *big.Int) CurvePoint {
 //
 //    (Ax,_) ← (Bpx,Bpy) · As
 //    (Bx,_) ← (Apx,Apy) · Bs
-//    Ax ≡ Bx
+//    Ax = Bx
 //
 // Where As and Bs are secret keys, (Bpx,Bpy) and (Apx,Apy) are the public
 // keys of A and B. (Ax,_) and (Bx,_) are points, and both Ax and Ay are equal.
 // The second points of the result are discarded according to RFC5903 (Section 9).
 //
 func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
-    // TODO: theirPub.IsOnCurve?
-    // TODO: isValidSecretKey(myPriv)
     // See: RFC5903 (Section 9)
-    return theirPub.ScalarMult(myPriv).X.Bytes()
+    return theirPub.ScalarMult(myPriv).Marshal()[:32]
 }
 
 

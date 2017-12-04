@@ -3,97 +3,13 @@
 
 [[projects]]
   branch = "master"
-  name = "github.com/btcsuite/btcd"
-  packages = ["addrmgr","blockchain","blockchain/fullblocktests","blockchain/indexers","btcec","btcjson","chaincfg","chaincfg/chainhash","connmgr","database","database/ffldb","database/internal/treap","integration/rpctest","limits","mempool","mining","mining/cpuminer","netsync","peer","rpcclient","txscript","wire"]
-  revision = "64d60f2ef245fc7a5ea6de22c8368fa699f26f8c"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/btcsuite/btclog"
+  name = "github.com/clearmatics/bn256"
   packages = ["."]
-  revision = "84c8d2346e9fc8c7b947e243b9c24e6df9fd206a"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/btcsuite/btcutil"
-  packages = [".","base58","bech32","bloom","hdkeychain"]
-  revision = "501929d3d046174c3d39f0ea54ece471aa17238c"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/btcsuite/go-socks"
-  packages = ["socks"]
-  revision = "4720035b7bfd2a9bb130b1c184f8bbe41b6f0d0f"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/btcsuite/goleveldb"
-  packages = ["leveldb","leveldb/cache","leveldb/comparer","leveldb/errors","leveldb/filter","leveldb/iterator","leveldb/journal","leveldb/memdb","leveldb/opt","leveldb/storage","leveldb/table","leveldb/util"]
-  revision = "7834afc9e8cd15233b6c3d97e12674a31ca24602"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/btcsuite/snappy-go"
-  packages = ["."]
-  revision = "0bdef8d067237991ddaa1bb6072a740bc40601ba"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/btcsuite/websocket"
-  packages = ["."]
-  revision = "31079b6807923eb23992c421b114992b95131b55"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/btcsuite/winsvc"
-  packages = ["eventlog","mgr","registry","svc","winapi"]
-  revision = "f8fb11f83f7e860e3769a08e6811d1b399a43722"
-
-[[projects]]
-  name = "github.com/davecgh/go-spew"
-  packages = ["spew","spew/testdata"]
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
-
-[[projects]]
-  name = "github.com/jessevdk/go-flags"
-  packages = ["."]
-  revision = "96dc06278ce32a0e9d957d590bb987c81ee66407"
-  version = "v1.3.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/jrick/logrotate"
-  packages = ["rotator"]
-  revision = "a93b200c26cbae3bb09dd0dc2c7c7fe1468a034a"
-
-[[projects]]
-  name = "github.com/pmezard/go-difflib"
-  packages = ["difflib"]
-  revision = "792786c7400a136282c1664665ae0a8db921c6c2"
-  version = "v1.0.0"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/stretchr/objx"
-  packages = ["."]
-  revision = "1a9d0bb9f541897e62256577b352fdbc1fb4fd94"
-
-[[projects]]
-  name = "github.com/stretchr/testify"
-  packages = ["assert","http","mock","require"]
-  revision = "69483b4bd14f5845b5a1e55bca19e954e827f1d0"
-  version = "v1.1.4"
-
-[[projects]]
-  branch = "master"
-  name = "golang.org/x/crypto"
-  packages = ["ripemd160"]
-  revision = "9419663f5a44be8b34ca85f08abc5fe1be11f8a3"
+  revision = "483e9ef526adb9b76ceeeae119d5352394297cba"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "919075ac9bf9248b3ac1867a1c24059e80d2b3ff3cf7235f9632dc7a00261946"
+  inputs-digest = "df806bb3f4b754179bc0c8b140623d65a8b152f1ec2b97927b43ae8aa6fc30e3"
   solver-name = "gps-cdcl"
   solver-version = 1
