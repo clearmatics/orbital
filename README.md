@@ -2,6 +2,10 @@
 
 Orbital is a command-line tool to generate off-chain data required by [Möbius][3], a smart contract that offers trustless tumbling for transaction privacy.
 
+## Prerequisites
+
+A version of Go >= 1.8 is required. The [dep][1] tool is used for dependency management. 
+
 ## Installation
 
     go get github.com/clearmatics/orbital
