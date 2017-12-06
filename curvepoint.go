@@ -25,26 +25,34 @@ type CurvePoint struct {
 func (c *CurvePoint) MarshalJSON() ([]byte, error) {
 	x, y := c.GetXY()
 	return json.Marshal(&struct {
-		X *big.Int `json:"x"`
-		Y *big.Int `json:"y"`
+		X *hexBig `json:"x"`
+		Y *hexBig `json:"y"`
 	}{
-		X: x,
-		Y: y,
+		X: (*hexBig)(x),
+		Y: (*hexBig)(y),
 	})
 }
 
+
 func (c *CurvePoint) UnmarshalJSON(data []byte) error {
 	var aux struct {
-		X *big.Int `json:"x"`
-		Y *big.Int `json:"y"`
+		X *hexBig `json:"x"`
+		Y *hexBig `json:"y"`
 	}
-	if err := json.Unmarshal(data, &aux); err != nil {
+
+	err := json.Unmarshal(data, &aux)
+	if err != nil {
 		return err
 	}
-	if c.SetFromXY(aux.X, aux.Y) == nil {
+
+	if aux.X == nil || aux.Y == nil {
+		return errors.New("Invalid Point, no X or Y specified")
+	}
+
+	if c.SetFromXY((*big.Int)(aux.X), (*big.Int)(aux.Y)) == nil {
 		return errors.New("Failed to deserialize CurvePoint")
 	}
-	c.SetFromXY(aux.X, aux.Y)
+
 	return nil
 }
 
@@ -99,10 +107,9 @@ func (c CurvePoint) GetXY() (*big.Int, *big.Int) {
 	// Each value is a 256-bit number.	
 	const numBytes = 256 / 8
 	if c.z != nil {
-		// TODO: use c.z.CurvePoints()
 		m := c.z.Marshal()
 		x := new(big.Int).SetBytes(m[0*numBytes : 1*numBytes])
-		y := new(big.Int).SetBytes(m[1*numBytes : 2*numBytes])
+        y := new(big.Int).SetBytes(m[1*numBytes : 2*numBytes])
 		return x, y
 	}
 	return nil, nil

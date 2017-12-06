@@ -120,11 +120,15 @@ func main() {
 			// Load keys from the ring
 			data, err := ioutil.ReadFile(*keys_file)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to read key file '%v': %v\n", keys_file, err)
+				fmt.Fprintf(os.Stderr, "Unable to read key file '%v': %v\n", *keys_file, err)
 				os.Exit(1)
 			}
 
-			json.Unmarshal(data, &ring)
+			err = json.Unmarshal(data, &ring)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Unable to parse keys file '%v': %v\n", *keys_file, err)
+				os.Exit(1)
+			}
 		} else {
 			// Otherwise, generate a stealth session, as an example
 			alicePub, alicePriv, _ := generateKeyPair()

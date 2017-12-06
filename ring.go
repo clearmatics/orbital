@@ -7,12 +7,48 @@ package main
 import (
 	"crypto/sha256"
 	"math/big"
+	"encoding/json"
 )
 
 // A Ring is a number of public/private key pairs
 type Ring struct {
 	PubKeys  []CurvePoint `json:"pubkeys"`
 	PrivKeys []*big.Int   `json:"privkeys"`
+}
+
+
+func (r *Ring) MarshalJSON() ([]byte, error) {
+	pks := make([]*hexBig, len(r.PrivKeys))
+	for i, v := range r.PrivKeys {
+		pks[i] = (*hexBig)(v)
+	}
+
+	return json.Marshal(&struct {
+		PubKeys  []CurvePoint `json:"pubkeys"`
+		PrivKeys []*hexBig   `json:"privkeys"`
+	}{
+		PubKeys: r.PubKeys,
+		PrivKeys: pks,
+	})
+}
+
+func (r *Ring) UnmarshalJSON(data []byte) error {
+	var aux struct {
+		PubKeys  []CurvePoint `json:"pubkeys"`
+		PrivKeys []*hexBig   `json:"privkeys"`
+	}
+	err := json.Unmarshal(data, &aux)
+	if err != nil {
+		return err
+	}
+
+	pks := make([]*big.Int, len(aux.PrivKeys))
+	for i, v := range aux.PrivKeys {
+		pks[i] = (*big.Int)(v)
+	}
+	r.PrivKeys = pks[:]
+	r.PubKeys = aux.PubKeys
+	return nil
 }
 
 
