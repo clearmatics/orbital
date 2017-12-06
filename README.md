@@ -163,4 +163,4 @@ The project follows standard Go conventions using `gofmt`. If you wish to contri
 
 [1]: https://github.com/golang/dep
 [2]: https://github.com/golang/dep/blob/master/README.md
-[3]: https://gitlab.clearmatics.com/oss/mobius
+[3]: https://github.com/clearmatics/mobius
