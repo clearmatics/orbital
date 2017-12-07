@@ -12,9 +12,9 @@ A version of Go >= 1.8 is required. The [dep][1] tool is used for dependency man
 
 ## Usage
 
-When deployed a Möbius contract will emit a `RingMessage` that is an arbitrary hex encoded string. This message is signed to make withdrawals from the contract. 
+When deployed a Möbius contract will emit a `MixerMessage` that is an arbitrary hex encoded string. This message is signed to make withdrawals from the contract. 
 
-Orbital can be used to generate all data needed to deposit and withdraw from a Möbius smart contract. Providing you have the `RingMessage` value data can be generated as follows. In this example the hex encoded string is given as `291a6780850827fcd8621...`. A ring size of 2 is generated.
+Orbital can be used to generate all data needed to deposit and withdraw from a Möbius smart contract. Providing you have the `MixerMessage` value data can be generated as follows. In this example the hex encoded string is given as `291a6780850827fcd8621...`. A ring size of 2 is generated.
 
     ./orbital inputs -n 2 -m 291a6780850827fcd8621d0e5471343831109bc14142ec101527b048bb3d1794
 
@@ -71,15 +71,11 @@ To verify signatures pass a file with public keys and signatures to the `verify`
 
     orbital verify -f signatures.json -m 666f6f62617262617a
 
-Examples 
+Example:
+
 ```
     $ orbital generate -n 4 > keys.json
-    $ orbital verify -f ringSignature.json -m 50b44f86159783db5092ebe77fb4b9cc29e445e54db17f0e8d2bed4eb63126fc
-    Signatures verified
-```
-or
-```
-    $ orbital inputs -n 4 -m 50b44f86159783db5092ebe77fb4b9cc29e445e54db17f0e8d2bed4eb63126fc > ringSignature.json
+    $ orbital inputs -f keys.json -n 4 -m 50b44f86159783db5092ebe77fb4b9cc29e445e54db17f0e8d2bed4eb63126fc > ringSignature.json
     $ orbital verify -f ringSignature.json -m 50b44f86159783db5092ebe77fb4b9cc29e445e54db17f0e8d2bed4eb63126fc
     Signatures verified
 ```
@@ -95,17 +91,17 @@ $ orbital generate -n 2
 {
   "pubkeys": [
     {
-      "x": 53202990254242129984821116292342958982032538732251891028681618557466605103267,
-      "y": 113350357918605008175431316781526832336003746709402773019184703717803218368823
+      "x": "0x27e073fe3485b7ab97de5813342c3ce3dd19eba467a6b5f61b092813e67325e2",
+      "y": "0x639bbbc72ef12bc7449c08a4ac2d7d7a9ed0484e4d5d6ee4f4b6fa5844043c2"
     },
     {
-      "x": 88424329917342262816711482350788738042527708970466043100387261704248855107491,
-      "y": 59260658595316282581973744342597950668623851099072116196891936195050801350643
+      "x": "0xf5165507a4f67c89fd40603a3765e53a3656bf3c247421b6a69a05e0a7fabb",
+      "y": "0x6d9e4c9c4054e9f1f5d27cfad56c034f1654bc88ae6916722424c565976ef88"
     }
   ],
   "privkeys": [
-    22349825998821701797378606099676179909897898231961005770162217921273442111598,
-    102648465399097654117920514091549396436770184270947888717131433613128480538084
+    "0x12987c779f1c76fdc01efaa3ce7fe8e730512ee4a12055018a44b8c9044fb860",
+    "0x282e1c333c40fb8ffcb97a66d615af2a0c4077c5dc5dd50075cf6abf3e9e9f55"
   ]
 }
 ```
@@ -113,22 +109,23 @@ $ orbital generate -n 2
 Then derive a stealth address for the other party using the first secret key and the second public key, the JSON output displays the shared secret, your public key and their stealth addresses.
 
 ```
-$ orbital stealth -s 22349825998821701797378606099676179909897898231961005770162217921273442111598 -x 88424329917342262816711482350788738042527708970466043100387261704248855107491 -y 59260658595316282581973744342597950668623851099072116196891936195050801350643
+$ orbital stealth -s 0x10dfcf223f6dd92163004a34a5dd509e7ad57cc2199eebb0ac2494e6e87a8246 -x 0x304e70ae7fe4d42ba8a3cbb25d2442b09af08522d93eee77110e502e0bf21d3e -y 0x1a913cdcb4296b564e2cfe1d747e9fa5aa770c5c5b990324c69845be67c98a9b
+
 {
   "myPublic": {
-    "x": 53202990254242129984821116292342958982032538732251891028681618557466605103267,
-    "y": 113350357918605008175431316781526832336003746709402773019184703717803218368823
+    "x": "0xf6f50dec186fa8724c2b7597c3a51abaef04f42dd30628521e41f4379bf1642",
+    "y": "0x221935f311652fe5edde5a0098b9d758edc883faef61acfd4cfc7711e010e75"
   },
   "theirPublic": {
-    "x": 88424329917342262816711482350788738042527708970466043100387261704248855107491,
-    "y": 59260658595316282581973744342597950668623851099072116196891936195050801350643
+    "x": "0x304e70ae7fe4d42ba8a3cbb25d2442b09af08522d93eee77110e502e0bf21d3e",
+    "y": "0x1a913cdcb4296b564e2cfe1d747e9fa5aa770c5c5b990324c69845be67c98a9b"
   },
-  "sharedSecret": "5cLLuIzdNwPgDlgcp1l4QjcAKi3lBKuBLA8D3RtWLQI=",
+  "sharedSecret": "HnoXTU8p8WGJPtlcIUb9tLCjurAqnJkwNiVMcaUmVhU=",
   "theirStealthAddresses": [
     {
       "public": {
-        "x": 69380850297621879107185275122279026017384660398818062589861370260278309399018,
-        "y": 26871018971989864411633210899039205781865578748955351442237322594146409159475
+        "x": "0x1e82f9b171c24536f06061a207112af54db5232dc2331f5432b676339a3bbe8e",
+        "y": "0x133e9019c4c367505ca5b791dc92244a9513b5b9c96f183729c1b07c1946d25f"
       },
       "nonce": 0
     }
@@ -136,15 +133,14 @@ $ orbital stealth -s 22349825998821701797378606099676179909897898231961005770162
   "myStealthAddresses": [
     {
       "public": {
-        "x": 74390537890405246099775105804528312454210249389630428389559455977430334747312,
-        "y": 53655787374135976950002031543616192689347650013901897026704630974400993904672
+        "x": "0x2ecc04e14f8d74b1a08486d0aa4b8be682ca92f4082b2195bd95380312b9ae46",
+        "y": "0x17d954284508272403d121f4b9392456aec7938ea3e70844f6db79ea43b89cbe"
       },
       "nonce": 0,
-      "private": 111623309102215725136656670222624246002377157739441594457567804582028137434860
+      "private": 20885560622514516919971043866714208233025685278744852588179698445235938879992
     }
   ]
 }
-
 ```
 
 The other side can derive their stealth addresses using the following command:

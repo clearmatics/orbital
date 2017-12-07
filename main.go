@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"math/big"
 )
 
 func flagUsage() {
@@ -55,9 +54,9 @@ func main() {
 			return
 		}
 
-		mySecretKey, errMSK := new(big.Int).SetString(*_mySecretKey, 0)
-		if ! errMSK {
-			fmt.Fprintf(os.Stderr, "Unable to parse secret key: -s %v\n", *_mySecretKey)
+		mySecretKey, errMSK := ParseBigInt(*_mySecretKey) // new(big.Int).SetString(*_mySecretKey, 0)
+		if errMSK != nil || mySecretKey == nil {
+			fmt.Fprintf(os.Stderr, "Unable to parse secret key: -s %v: %v\n", *_mySecretKey, errMSK)
 			os.Exit(1)
 		}
 
@@ -68,7 +67,11 @@ func main() {
 			os.Exit(1)
 		}
 
-		session := NewStealthSession(mySecretKey, theirPublicKey, *nonceOffset, *n)
+		session, err := NewStealthSession(mySecretKey, theirPublicKey, *nonceOffset, *n)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to generate stealth session: %v\n", err)
+			os.Exit(1)
+		}
 
 		saJSON, err := json.MarshalIndent(session, "", "  ")
 		if err != nil {
@@ -133,8 +136,16 @@ func main() {
 			// Otherwise, generate a stealth session, as an example
 			alicePub, alicePriv, _ := generateKeyPair()
 			bobPub, bobPriv, _ := generateKeyPair()
-			stealthSessionAliceToBob := NewStealthSession(alicePriv, bobPub, 0, 1)
-			stealthSessionBobToAlice := NewStealthSession(bobPriv, alicePub, 0, 1)
+			stealthSessionAliceToBob, err := NewStealthSession(alicePriv, bobPub, 0, 1)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to derive stealth session, Alice->Bob: %v\n", err)
+				os.Exit(1)
+			}
+			stealthSessionBobToAlice, err := NewStealthSession(bobPriv, alicePub, 0, 1)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Failed to derive stealth session, Alice->Bob: %v\n", err)
+				os.Exit(1)
+			}
 
 			// Then generate some random key pairs and integrate our stealth session into the ring
 			ring.Generate(*n)

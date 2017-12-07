@@ -7,6 +7,7 @@ package main;
 import (
     "crypto/sha256"
     "math/big"
+    "fmt"
 )
 
 // StealthAddress represents the stealth public key of another party
@@ -56,12 +57,12 @@ var bigTwo = new(big.Int).SetInt64(int64(2))
 // a valid curve point, where 0 < S < G
 //
 func isValidSecretKey (secret *big.Int) bool {
-    // < 1
-    if secret.Cmp(bigOne) <= 0 {
+    // secret < 1
+    if secret.Cmp(bigOne) < 0 {
         return false
     }
 
-    // >= G
+    // secret >= G
     if secret.Cmp(CurvePoint{}.Order()) >= 0 {
         return false
     }
@@ -165,12 +166,16 @@ func deriveSharedSecret (myPriv *big.Int, theirPub *CurvePoint) []byte {
 // NewStealthSession derives all information necessary to communicate between
 // two parties using a series of one-time key pairs.
 //
-func NewStealthSession (mySecret *big.Int, theirPublic *CurvePoint, nonceOffset int, addressCount int) *StealthSession {
+func NewStealthSession (mySecret *big.Int, theirPublic *CurvePoint, nonceOffset int, addressCount int) (*StealthSession, error) {
     var theirAddresses []StealthAddress
     var myAddresses []PrivateStealthAddress
 
     if false == isValidSecretKey(mySecret) {
-        return nil
+        return nil, fmt.Errorf("Invalid secret key: %v", mySecret)
+    }
+
+    if nil == theirPublic {
+        return nil, fmt.Errorf("Null public key provided")
     }
 
     sharedSecret := deriveSharedSecret(mySecret, theirPublic)
@@ -180,8 +185,7 @@ func NewStealthSession (mySecret *big.Int, theirPublic *CurvePoint, nonceOffset 
 
         theirStealthPub := StealthPubDerive(theirPublic, secret)
         if theirStealthPub == nil {
-            // TODO: return error
-            return nil
+            return nil, fmt.Errorf("Could not derive stealth public key %v", i)
         }
         theirSA := StealthAddress{*theirStealthPub, nonce}
         theirAddresses = append(theirAddresses, theirSA)
@@ -200,5 +204,5 @@ func NewStealthSession (mySecret *big.Int, theirPublic *CurvePoint, nonceOffset 
         MyAddresses: myAddresses,
     }
 
-    return &session
+    return &session, nil
 }

@@ -11,6 +11,17 @@ import (
 )
 
 
+func TestValidSecret(t *testing.T) {
+    if isValidSecretKey(bigZero) {
+        t.Fatal("Zero is a valid secret?")
+    }
+
+    if isValidSecretKey(CurvePoint{}.Order()) {
+        t.Fatal("Curve Gen Order is a valid secret!")
+    }
+}
+
+
 func generatePairOfTestKeys(t *testing.T) (*CurvePoint, *big.Int, *CurvePoint, *big.Int) {
     Ap, As, err := generateKeyPair()
     if err != nil {
@@ -83,8 +94,15 @@ func TestStealthAddressPrimitives(t *testing.T) {
 func TestStealthAddressSession(t *testing.T) {
     Ap, As, Bp, Bs := generatePairOfTestKeys(t)
 
-    sessA := NewStealthSession(As, Bp, 0, 2)
-    sessB := NewStealthSession(Bs, Ap, 0, 2)
+    sessA, err := NewStealthSession(As, Bp, 0, 2)
+    if err != nil {
+        t.Fatal("sessA invalid", err)
+    }
+
+    sessB, err := NewStealthSession(Bs, Ap, 0, 2)
+    if err != nil {
+        t.Fatal("sessB invalid", err)
+    }    
 
     if ! sessA.TheirPublic.Equals(Bp) {
         t.Fatal("Public Key Mismatch, A.TheirP != Bp")
@@ -121,8 +139,9 @@ func TestStealthInvalidSecret(t *testing.T) {
             t.Fatal(secretKey, "accepted as secret key to StealthPrivDerive")
         }
 
-        if nil != NewStealthSession(secretKey, Bp, 0, 1) {
-            t.Fatal(secretKey, "accepted as secret key to NewStealthSession")
+        _, err := NewStealthSession(secretKey, Bp, 0, 1)
+        if err == nil  {
+            t.Fatal(secretKey, "accepted as secret key to NewStealthSession", err)
         }
     }
 }
@@ -135,10 +154,12 @@ func TestStealthInvalidPublic(t *testing.T) {
     for _, secretKey := range invalidSecretKeys {
         publicKey := derivePublicKey(secretKey)
         if StealthPubDerive(&publicKey, testBytes) != nil {
-            t.Log(publicKey, "(from ", secretKey, ") accepted as public key to StealthPubDerive")
+            t.Fatal(publicKey, "(from ", secretKey, ") accepted as public key to StealthPubDerive")
         }
-        if NewStealthSession(As, &publicKey, 0, 1) != nil {
-            t.Log(publicKey, "(from ", secretKey, ") accepted as public key to NewStealthSession")
+
+        _, err := NewStealthSession(As, &publicKey, 0, 1)
+        if err == nil {
+            t.Fatal(publicKey, "(from ", secretKey, ") accepted as public key to NewStealthSession", err)
         }
 
         // Deliberately create an invalid curve point from a valid one
@@ -148,8 +169,9 @@ func TestStealthInvalidPublic(t *testing.T) {
             if StealthPubDerive(alteredPublicKey, testBytes) != nil {
                 t.Fatal(Bp, " + (1,-1) accepted as public key to StealthPubDerive")
             }
-            if NewStealthSession(As, alteredPublicKey, 0, 1) != nil {
-                t.Fatal(Bp, " + (1,-1) accepted as public key to NewStealthSession")
+            _, err := NewStealthSession(As, alteredPublicKey, 0, 1)
+            if err != nil {
+                t.Fatal(Bp, " + (1,-1) accepted as public key to NewStealthSession", err)
             }
         }
     }

@@ -234,13 +234,16 @@ func (c CurvePoint) HashPointAdd(hashSP CurvePoint, tj *big.Int, cj *big.Int) Cu
 // ParseCurvePoint parses string representations of X and Y points
 // these can be hex or base10 encoded
 func ParseCurvePoint( pointX string, pointY string ) *CurvePoint {
-	x, errX := new(big.Int).SetString(pointX, 0)
-	y, errY := new(big.Int).SetString(pointY, 0)
-	if ! errX || ! errY {
+	x, errX := ParseBigInt(pointX)
+	y, errY := ParseBigInt(pointY)
+	if nil != errX || nil != errY {
 		return nil;
-	}
+	}	
 
 	c := CurvePoint{}
-	c.SetFromXY(x, y)
-	return &c
+	if c.SetFromXY(x, y) != nil {
+		return &c
+	}
+
+	return nil
 }
