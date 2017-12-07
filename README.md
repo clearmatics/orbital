@@ -109,23 +109,23 @@ $ orbital generate -n 2
 Then derive a stealth address for the other party using the first secret key and the second public key, the JSON output displays the shared secret, your public key and their stealth addresses.
 
 ```
-$ orbital stealth -s 0x10dfcf223f6dd92163004a34a5dd509e7ad57cc2199eebb0ac2494e6e87a8246 -x 0x304e70ae7fe4d42ba8a3cbb25d2442b09af08522d93eee77110e502e0bf21d3e -y 0x1a913cdcb4296b564e2cfe1d747e9fa5aa770c5c5b990324c69845be67c98a9b
+$ orbital stealth -s 0x12987c779f1c76fdc01efaa3ce7fe8e730512ee4a12055018a44b8c9044fb860 -x 0xf5165507a4f67c89fd40603a3765e53a3656bf3c247421b6a69a05e0a7fabb -y 0x6d9e4c9c4054e9f1f5d27cfad56c034f1654bc88ae6916722424c565976ef88
 
 {
   "myPublic": {
-    "x": "0xf6f50dec186fa8724c2b7597c3a51abaef04f42dd30628521e41f4379bf1642",
-    "y": "0x221935f311652fe5edde5a0098b9d758edc883faef61acfd4cfc7711e010e75"
+    "x": "0x27e073fe3485b7ab97de5813342c3ce3dd19eba467a6b5f61b092813e67325e2",
+    "y": "0x639bbbc72ef12bc7449c08a4ac2d7d7a9ed0484e4d5d6ee4f4b6fa5844043c2"
   },
   "theirPublic": {
-    "x": "0x304e70ae7fe4d42ba8a3cbb25d2442b09af08522d93eee77110e502e0bf21d3e",
-    "y": "0x1a913cdcb4296b564e2cfe1d747e9fa5aa770c5c5b990324c69845be67c98a9b"
+    "x": "0xf5165507a4f67c89fd40603a3765e53a3656bf3c247421b6a69a05e0a7fabb",
+    "y": "0x6d9e4c9c4054e9f1f5d27cfad56c034f1654bc88ae6916722424c565976ef88"
   },
-  "sharedSecret": "HnoXTU8p8WGJPtlcIUb9tLCjurAqnJkwNiVMcaUmVhU=",
+  "sharedSecret": "I08U3nLP/qtTwHjR5yGmle3cA5kpNiQDHhLwtzJfvl0=",
   "theirStealthAddresses": [
     {
       "public": {
-        "x": "0x1e82f9b171c24536f06061a207112af54db5232dc2331f5432b676339a3bbe8e",
-        "y": "0x133e9019c4c367505ca5b791dc92244a9513b5b9c96f183729c1b07c1946d25f"
+        "x": "0x1f423980ffbd537b90d8581afb34a91d870d13455928737ee5c60292b7af4752",
+        "y": "0x938aab5f627113ef524ce77458e89d0c611ce1837b34c9308a93d35622759de"
       },
       "nonce": 0
     }
@@ -133,11 +133,11 @@ $ orbital stealth -s 0x10dfcf223f6dd92163004a34a5dd509e7ad57cc2199eebb0ac2494e6e
   "myStealthAddresses": [
     {
       "public": {
-        "x": "0x2ecc04e14f8d74b1a08486d0aa4b8be682ca92f4082b2195bd95380312b9ae46",
-        "y": "0x17d954284508272403d121f4b9392456aec7938ea3e70844f6db79ea43b89cbe"
+        "x": "0x15472269a2b1c629d136a10732f7422ac73213d7712198be6e4f0060fa48e964",
+        "y": "0x129e34473d8c37f6206a9bc0be2f8fd1bb4999902d10ea35d3d50fb775e9f5e4"
       },
       "nonce": 0,
-      "private": 20885560622514516919971043866714208233025685278744852588179698445235938879992
+      "private": 14674696873446288336876702922514381849233625593912482006822333717333299928756
     }
   ]
 }
@@ -146,7 +146,7 @@ $ orbital stealth -s 0x10dfcf223f6dd92163004a34a5dd509e7ad57cc2199eebb0ac2494e6e
 The other side can derive their stealth addresses using the following command:
 
 ```
-$ orbital stealth -s 102648465399097654117920514091549396436770184270947888717131433613128480538084 -x 53202990254242129984821116292342958982032538732251891028681618557466605103267 -y 113350357918605008175431316781526832336003746709402773019184703717803218368823
+$ orbital stealth -s 0x282e1c333c40fb8ffcb97a66d615af2a0c4077c5dc5dd50075cf6abf3e9e9f55 -x 0x27e073fe3485b7ab97de5813342c3ce3dd19eba467a6b5f61b092813e67325e2 -y 0x639bbbc72ef12bc7449c08a4ac2d7d7a9ed0484e4d5d6ee4f4b6fa5844043c2
 ```
 
 Note that the public keys calculated on either side will be the same, but neither side knows the others private key.
