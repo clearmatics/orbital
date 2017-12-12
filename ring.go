@@ -106,16 +106,16 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 
 	// Message is a 256 bit token which uniquely identifies the Ring and the public keys
 	// of all of its participants
-	var message_hash [32]byte
-	copy(message_hash[:], message)
-	hashp := NewCurvePointFromHash(message_hash)
+	var messageHash [32]byte
+	copy(messageHash[:], message)
+	hashp := NewCurvePointFromHash(messageHash)
 
 	// Calculate Tau
 	pk.Mod(pk, N)
 	hashSP := hashp.ScalarMult(pk)
 
 	// hashout = H(hash.X, tau)
-	hash_acc := sha256.Sum256(append(hashp.Marshal()[:32], hashSP.Marshal()...))
+	hashAcc := sha256.Sum256(append(hashp.Marshal()[:32], hashSP.Marshal()...))
 
 	n := len(r.PubKeys)
 	var ctlist []*big.Int   //This has to be 2n so here we have n = 4 so 2n = 8 :)
@@ -147,10 +147,10 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 			b = hashp.ScalarMult(ri)
 		}
 
-		hash_acc = sha256.Sum256(append(hash_acc[:], append(a.Marshal(), b.Marshal()...)...))
+		hashAcc = sha256.Sum256(append(hashAcc[:], append(a.Marshal(), b.Marshal()...)...))
 	}
 
-	hashb := new(big.Int).SetBytes(hash_acc[:])
+	hashb := new(big.Int).SetBytes(hashAcc[:])
 	hashb.Mod(hashb, N)
 
 	csum.Mod(csum, N)
@@ -195,11 +195,11 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 	n := len(r.PubKeys)
 	N := CurvePoint{}.Order() //group.N
 
-	var message_hash [32]byte
-	copy(message_hash[:], message)
-	hashp := NewCurvePointFromHash(message_hash)
+	var messageHash [32]byte
+	copy(messageHash[:], message)
+	hashp := NewCurvePointFromHash(messageHash)
 
-	hash_acc := sha256.Sum256(append(hashp.Marshal()[:32], tau.Marshal()...))
+	hashAcc := sha256.Sum256(append(hashp.Marshal()[:32], tau.Marshal()...))
 
 	csum := big.NewInt(0)
 
@@ -217,13 +217,13 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 		H := hashp.ScalarMult(tj)             //H(m||R)^t
 		H = H.Add(tauc) // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
 
-		hash_acc = sha256.Sum256(append(hash_acc[:], append(gt.Marshal(), H.Marshal()...)...))
+		hashAcc = sha256.Sum256(append(hashAcc[:], append(gt.Marshal(), H.Marshal()...)...))
 
 		csum.Add(csum, cj)
 		csum.Mod(csum, N)
 	}
 
-	hashout := new(big.Int).SetBytes(hash_acc[:])
+	hashout := new(big.Int).SetBytes(hashAcc[:])
 	hashout.Mod(hashout, N)
 	csum.Mod(csum, N)
 	return csum.Cmp(hashout) == 0

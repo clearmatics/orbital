@@ -22,11 +22,11 @@ func TestCurvepointGenerate (t *testing.T) {
 
 
 func TestHashToCurve (t *testing.T) {
-    test_x, _ := new(big.Int).SetString("18149469767584732552991861025120904666601524803017597654373315627649680264678", 10)
-    test_y, _ := new(big.Int).SetString("18593544354303197021588991433499968191850988132424885073381608163097237734820", 10)
+    testX, _ := new(big.Int).SetString("18149469767584732552991861025120904666601524803017597654373315627649680264678", 10)
+    testY, _ := new(big.Int).SetString("18593544354303197021588991433499968191850988132424885073381608163097237734820", 10)
 
-    test_p := new(CurvePoint).SetFromXY(test_x, test_y)
-    if ! test_p.IsOnCurve() {
+    testP := new(CurvePoint).SetFromXY(testX, testY)
+    if ! testP.IsOnCurve() {
         t.Fatal("Test vector not on curve")
     }
 
@@ -34,8 +34,8 @@ func TestHashToCurve (t *testing.T) {
     p := NewCurvePointFromHash(h)
 
     x, y := p.GetXY()
-    if x.Cmp(test_x) != 0 || y.Cmp(test_y) != 0 {
-        t.Fatal("HashToCurve(sha256('1')), got", x, y, "expected", test_x, test_y)
+    if x.Cmp(testX) != 0 || y.Cmp(testY) != 0 {
+        t.Fatal("HashToCurve(sha256('1')), got", x, y, "expected", testX, testY)
     }
 }
 
@@ -48,27 +48,27 @@ func TestCurvepointBaseMult (t *testing.T) {
 
     // Verify sha256 hash of "1" is correct
     // sha256("1").hexdigest()
-    a_test, _ := new(big.Int).SetString("6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b", 16)
-    if a.Cmp(a_test) != 0 {
+    aTest, _ := new(big.Int).SetString("6b86b273ff34fce19d6b804eff5a3f5747ada4eaa22f1d49c01e52ddb7875b4b", 16)
+    if a.Cmp(aTest) != 0 {
         t.Fatal("sha('1') test vector incorrect")
     }
 
     // Create 'public key' from private key of sha256("1")
     // Python equivalent: bn128.multiply(bn128.G1, int(sha256("1").hexdigest(), 16))
     b := CurvePoint{}.ScalarBaseMult(a)
-    b_x, b_y := b.GetXY()
+    bX, bY := b.GetXY()
 
     // Verify test vector from solidity and py_ecc.bn128
-    test_x, _ := new(big.Int).SetString("18402258484067100825836416533206638046709953333460439275068607944552700874793", 10)
-    test_y, _ := new(big.Int).SetString("3216486158313018618592493241388793958480998389453172132732084762339402552220", 10)
-    if b_x.Cmp(test_x) != 0 || b_y.Cmp(test_y) != 0 {
-        t.Fatal("Test vector incorrect, ", b, "should be", test_x, test_y)
+    testX, _ := new(big.Int).SetString("18402258484067100825836416533206638046709953333460439275068607944552700874793", 10)
+    testY, _ := new(big.Int).SetString("3216486158313018618592493241388793958480998389453172132732084762339402552220", 10)
+    if bX.Cmp(testX) != 0 || bY.Cmp(testY) != 0 {
+        t.Fatal("Test vector incorrect, ", b, "should be", testX, testY)
     }
 
     // Verify CurvePoint can be unserialized from the outputs it gives you
-    c := new(CurvePoint).SetFromXY(b_x, b_y);
+    c := new(CurvePoint).SetFromXY(bX, bY);
     if c == nil {
-        t.Fatal("CurvePoint unserialize failed, presumably given invalid points", b, b_x, b_y, c)
+        t.Fatal("CurvePoint unserialize failed, presumably given invalid points", b, bX, bY, c)
     }
     if ! c.Equals(&b) {
         t.Fatal("Points not equal after serialize > unserialize", b, c)
