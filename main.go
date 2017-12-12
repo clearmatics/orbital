@@ -150,9 +150,8 @@ func main() {
 			// Then generate some random key pairs and integrate our stealth session into the ring
 			ring.Generate(*n)
 			ring.PrivKeys[0] = stealthSessionBobToAlice.MyAddresses[0].Private
-			ring.PubKeys[0] = stealthSessionAliceToBob.TheirAddresses[0].Public			
+			ring.PubKeys[0] = stealthSessionAliceToBob.TheirAddresses[0].Public
 		}
-
 
 		decoded, err := hex.DecodeString(*m)
 		if err != nil {

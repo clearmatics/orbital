@@ -6,15 +6,14 @@ package main
 
 import (
 	"bytes"
-	"fmt"
-	"errors"
-	"encoding/json"
 	"crypto/rand"
-	"math/big"
-	"github.com/clearmatics/bn256"
 	"crypto/sha256"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"github.com/clearmatics/bn256"
+	"math/big"
 )
-
 
 // CurvePoint represents a point on an elliptic curve
 type CurvePoint struct {
@@ -33,7 +32,7 @@ func (c *CurvePoint) MarshalJSON() ([]byte, error) {
 	})
 }
 
-// UnmarshalJSON converts a JSON representation to a CurvePoint struct 
+// UnmarshalJSON converts a JSON representation to a CurvePoint struct
 func (c *CurvePoint) UnmarshalJSON(data []byte) error {
 	var aux struct {
 		X *hexBig `json:"x"`
@@ -56,10 +55,9 @@ func (c *CurvePoint) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 // Equals returns true if X and Y of both curve points are equal
 func (c CurvePoint) Equals(d *CurvePoint) bool {
-	return bytes.Compare(c.Marshal(), d.Marshal()) == 0;
+	return bytes.Compare(c.Marshal(), d.Marshal()) == 0
 }
 
 // Prime returns the prime component of the BN256 curve
@@ -72,27 +70,25 @@ func (c CurvePoint) Order() *big.Int {
 	return bn256.Order
 }
 
-
 // isBetween checks number is within range of (lower,upper)
 // e.g. number > lower && number < upper
-func isBetween (number *big.Int, lower *big.Int, upper *big.Int) bool {
+func isBetween(number *big.Int, lower *big.Int, upper *big.Int) bool {
 	return false == (number.Cmp(lower) <= 0 || number.Cmp(upper) >= 0)
 }
 
-
-// randomPositiveBelow generates a uniformly random number between 1 and `below` 
-func randomPositiveBelow (below *big.Int) *big.Int {
+// randomPositiveBelow generates a uniformly random number between 1 and `below`
+func randomPositiveBelow(below *big.Int) *big.Int {
 	for {
-        number, err := rand.Int(rand.Reader, bn256.Order)
-        if err != nil {
-            return nil
-        }
+		number, err := rand.Int(rand.Reader, bn256.Order)
+		if err != nil {
+			return nil
+		}
 
-        // x > 0 && x < below
-        if isBetween(number, bigZero, below) {
-        	return number
-        }
-    }
+		// x > 0 && x < below
+		if isBetween(number, bigZero, below) {
+			return number
+		}
+	}
 }
 
 // RandomN returns a uniformly random integer between 1 and P-1
@@ -107,19 +103,19 @@ func (c CurvePoint) RandomP() *big.Int {
 
 // GetXY returns the X and Y coordinates for a given CurvePoint
 func (c CurvePoint) GetXY() (*big.Int, *big.Int) {
-	// Each value is a 256-bit number.	
+	// Each value is a 256-bit number.
 	const numBytes = 256 / 8
 	if c.z != nil {
 		m := c.z.Marshal()
 		x := new(big.Int).SetBytes(m[0*numBytes : 1*numBytes])
-        y := new(big.Int).SetBytes(m[1*numBytes : 2*numBytes])
+		y := new(big.Int).SetBytes(m[1*numBytes : 2*numBytes])
 		return x, y
 	}
 	return nil, nil
 }
 
 // SetFromXY returns a CurvePoint based on the provided x and Y coordinates
-func (c *CurvePoint) SetFromXY (x *big.Int, y *big.Int) *CurvePoint {
+func (c *CurvePoint) SetFromXY(x *big.Int, y *big.Int) *CurvePoint {
 	const numBytes = 256 / 8
 
 	// XXX: there's no equivalent to SetCurvePoints, other than Unmarshal
@@ -143,7 +139,7 @@ func (c CurvePoint) Marshal() []byte {
 	return c.z.Marshal()
 }
 
-// Unmarshal converts a JSON representation to a CurvePoint struct 
+// Unmarshal converts a JSON representation to a CurvePoint struct
 func (c CurvePoint) Unmarshal(m []byte) bool {
 	_, ret := c.z.Unmarshal(m)
 	return ret
@@ -179,14 +175,14 @@ func NewCurvePointFromHash(h [sha256.Size]byte) *CurvePoint {
 	// TODO: limit number of iterations?
 	// y² = x³ + B
 	for {
-		xx := new(big.Int).Mul(x, x)		// x²
+		xx := new(big.Int).Mul(x, x) // x²
 		xx.Mod(xx, P)
 
-		xxx := xx.Mul(xx, x)				// x³
+		xxx := xx.Mul(xx, x) // x³
 		xxx.Mod(xxx, P)
 
-		beta := new(big.Int).Add(xxx, curveB)	// x³ + B
-		beta.Mod(beta, P)						
+		beta := new(big.Int).Add(xxx, curveB) // x³ + B
+		beta.Mod(beta, P)
 
 		//y := new(big.Int).ModSqrt(t, P)		// y = √(x³+B)
 		y := new(big.Int).Exp(beta, A, P)
@@ -212,7 +208,7 @@ func (c CurvePoint) ScalarBaseMult(x *big.Int) CurvePoint {
 	return CurvePoint{new(bn256.G1).ScalarBaseMult(x)}
 }
 
-// ScalarMult returns the product c*x where the result and base are the x coordinates of group points 
+// ScalarMult returns the product c*x where the result and base are the x coordinates of group points
 func (c CurvePoint) ScalarMult(x *big.Int) CurvePoint {
 	return CurvePoint{new(bn256.G1).ScalarMult(c.z, x)}
 }
@@ -240,12 +236,12 @@ func (c CurvePoint) HashPointAdd(hashSP CurvePoint, tj *big.Int, cj *big.Int) Cu
 
 // ParseCurvePoint parses string representations of X and Y points
 // these can be hex or base10 encoded
-func ParseCurvePoint( pointX string, pointY string ) *CurvePoint {
+func ParseCurvePoint(pointX string, pointY string) *CurvePoint {
 	x, errX := ParseBigInt(pointX)
 	y, errY := ParseBigInt(pointY)
 	if nil != errX || nil != errY {
-		return nil;
-	}	
+		return nil
+	}
 
 	c := CurvePoint{}
 	if c.SetFromXY(x, y) != nil {
