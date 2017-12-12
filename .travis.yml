@@ -6,6 +6,7 @@ matrix:
       dist: trusty
       go: 1.8.x
       script:
+        - go get github.com/golang/lint/golint
         - make build   
         - make lint      
         - make check
@@ -15,6 +16,7 @@ matrix:
       dist: trusty
       go: 1.9.x
       script:
+        - go get github.com/golang/lint/golint     
         - make build        
         - make lint
         - make check
