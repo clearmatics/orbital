@@ -5,8 +5,8 @@
 package main
 
 import (
-	"math/big"
 	"encoding/json"
+	"math/big"
 )
 
 // A RingSignature is represented as a curve point and the signature data itself
@@ -15,7 +15,7 @@ type RingSignature struct {
 	Ctlist []*big.Int `json:"ctlist"`
 }
 
-
+// MarshalJSON converts a RingSignature to a JSON representation
 func (rs *RingSignature) MarshalJSON() ([]byte, error) {
 	// XXX: go has no easy way of doing this without iterating
 	ctlist := make([]*hexBig, len(rs.Ctlist))
@@ -25,17 +25,18 @@ func (rs *RingSignature) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(&struct {
 		Tau    CurvePoint `json:"tau"`
-		Ctlist []*hexBig `json:"ctlist"`
+		Ctlist []*hexBig  `json:"ctlist"`
 	}{
-		Tau: rs.Tau,
+		Tau:    rs.Tau,
 		Ctlist: ctlist,
 	})
 }
 
+// UnmarshalJSON converts a JSON representation to a RingSignature struct
 func (rs *RingSignature) UnmarshalJSON(data []byte) error {
 	var aux struct {
 		Tau    CurvePoint `json:"tau"`
-		Ctlist []*hexBig `json:"ctlist"`
+		Ctlist []*hexBig  `json:"ctlist"`
 	}
 	err := json.Unmarshal(data, &aux)
 	if err != nil {

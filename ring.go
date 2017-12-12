@@ -6,8 +6,8 @@ package main
 
 import (
 	"crypto/sha256"
-	"math/big"
 	"encoding/json"
+	"math/big"
 )
 
 // A Ring is a number of public/private key pairs
@@ -16,7 +16,7 @@ type Ring struct {
 	PrivKeys []*big.Int   `json:"privkeys"`
 }
 
-
+// MarshalJSON converts a Ring to a JSON representation
 func (r *Ring) MarshalJSON() ([]byte, error) {
 	pks := make([]*hexBig, len(r.PrivKeys))
 	for i, v := range r.PrivKeys {
@@ -25,17 +25,18 @@ func (r *Ring) MarshalJSON() ([]byte, error) {
 
 	return json.Marshal(&struct {
 		PubKeys  []CurvePoint `json:"pubkeys"`
-		PrivKeys []*hexBig   `json:"privkeys"`
+		PrivKeys []*hexBig    `json:"privkeys"`
 	}{
-		PubKeys: r.PubKeys,
+		PubKeys:  r.PubKeys,
 		PrivKeys: pks,
 	})
 }
 
+// UnmarshalJSON converts a JSON representation to a Ring struct
 func (r *Ring) UnmarshalJSON(data []byte) error {
 	var aux struct {
 		PubKeys  []CurvePoint `json:"pubkeys"`
-		PrivKeys []*hexBig   `json:"privkeys"`
+		PrivKeys []*hexBig    `json:"privkeys"`
 	}
 	err := json.Unmarshal(data, &aux)
 	if err != nil {
@@ -51,17 +52,15 @@ func (r *Ring) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-
 func convert(data []byte) *big.Int {
 	z := new(big.Int)
 	z.SetBytes(data)
 	return z
 }
 
-
 var curveB = new(big.Int).SetInt64(3)
 
-
+// PublicKeysHashed returns the hashed public key for the given Ring
 func (r Ring) PublicKeysHashed() [sha256.Size]byte {
 	var out [sha256.Size]byte
 
@@ -105,19 +104,19 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 
 	// Message is a 256 bit token which uniquely identifies the Ring and the public keys
 	// of all of its participants
-	var message_hash [32]byte
-	copy(message_hash[:], message)
-	hashp := NewCurvePointFromHash(message_hash)
+	var messageHash [32]byte
+	copy(messageHash[:], message)
+	hashp := NewCurvePointFromHash(messageHash)
 
 	// Calculate Tau
 	pk.Mod(pk, N)
 	hashSP := hashp.ScalarMult(pk)
 
 	// hashout = H(hash.X, tau)
-	hash_acc := sha256.Sum256(append(hashp.Marshal()[:32], hashSP.Marshal()...))
+	hashAcc := sha256.Sum256(append(hashp.Marshal()[:32], hashSP.Marshal()...))
 
 	n := len(r.PubKeys)
-	var ctlist []*big.Int   //This has to be 2n so here we have n = 4 so 2n = 8 :)
+	var ctlist []*big.Int //This has to be 2n so here we have n = 4 so 2n = 8 :)
 	var a, b CurvePoint
 	var ri *big.Int
 
@@ -146,10 +145,10 @@ func (r *Ring) Signature(pk *big.Int, message []byte, signer int) (*RingSignatur
 			b = hashp.ScalarMult(ri)
 		}
 
-		hash_acc = sha256.Sum256(append(hash_acc[:], append(a.Marshal(), b.Marshal()...)...))
+		hashAcc = sha256.Sum256(append(hashAcc[:], append(a.Marshal(), b.Marshal()...)...))
 	}
 
-	hashb := new(big.Int).SetBytes(hash_acc[:])
+	hashb := new(big.Int).SetBytes(hashAcc[:])
 	hashb.Mod(hashb, N)
 
 	csum.Mod(csum, N)
@@ -194,11 +193,11 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 	n := len(r.PubKeys)
 	N := CurvePoint{}.Order() //group.N
 
-	var message_hash [32]byte
-	copy(message_hash[:], message)
-	hashp := NewCurvePointFromHash(message_hash)
+	var messageHash [32]byte
+	copy(messageHash[:], message)
+	hashp := NewCurvePointFromHash(messageHash)
 
-	hash_acc := sha256.Sum256(append(hashp.Marshal()[:32], tau.Marshal()...))
+	hashAcc := sha256.Sum256(append(hashp.Marshal()[:32], tau.Marshal()...))
 
 	csum := big.NewInt(0)
 
@@ -211,18 +210,18 @@ func (r *Ring) VerifySignature(message []byte, sigma RingSignature) bool {
 		yc := r.PubKeys[j].ScalarMult(cj)     // y^c = g^(xc)
 		gt := CurvePoint{}.ScalarBaseMult(tj) // g^t + y^c
 		gt = gt.Add(yc)
-		
-		tauc := tau.ScalarMult(cj)            //H(m||R)^(xc)
-		H := hashp.ScalarMult(tj)             //H(m||R)^t
-		H = H.Add(tauc) // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
 
-		hash_acc = sha256.Sum256(append(hash_acc[:], append(gt.Marshal(), H.Marshal()...)...))
+		tauc := tau.ScalarMult(cj) //H(m||R)^(xc)
+		H := hashp.ScalarMult(tj)  //H(m||R)^t
+		H = H.Add(tauc)            // fieldJacobianToBigAffine `normalizes' values before returning so yes - normalize uses fast reduction using specialised form of secp256k1's prime! :D
+
+		hashAcc = sha256.Sum256(append(hashAcc[:], append(gt.Marshal(), H.Marshal()...)...))
 
 		csum.Add(csum, cj)
 		csum.Mod(csum, N)
 	}
 
-	hashout := new(big.Int).SetBytes(hash_acc[:])
+	hashout := new(big.Int).SetBytes(hashAcc[:])
 	hashout.Mod(hashout, N)
 	csum.Mod(csum, N)
 	return csum.Cmp(hashout) == 0

@@ -100,7 +100,7 @@ func main() {
 		fmt.Println(string(ringJSON))
 
 	case "inputs":
-		keys_file := inputsCmd.String("k", "", "Load signing keys from a JSON file")
+		keysFile := inputsCmd.String("k", "", "Load signing keys from a JSON file")
 		n := inputsCmd.Int("n", 0, "The size of the ring to be generated e.g. 4")
 		m := inputsCmd.String("m", "", "A Hex encoded string to be used to generate the ring")
 		inputsCmd.Parse(os.Args[2:])
@@ -119,17 +119,17 @@ func main() {
 		var stealthSessionAliceToBob *StealthSession
 		var stealthSessionBobToAlice *StealthSession
 
-		if *keys_file != "" {
+		if *keysFile != "" {
 			// Load keys from the ring
-			data, err := ioutil.ReadFile(*keys_file)
+			data, err := ioutil.ReadFile(*keysFile)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to read key file '%v': %v\n", *keys_file, err)
+				fmt.Fprintf(os.Stderr, "Unable to read key file '%v': %v\n", *keysFile, err)
 				os.Exit(1)
 			}
 
 			err = json.Unmarshal(data, &ring)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "Unable to parse keys file '%v': %v\n", *keys_file, err)
+				fmt.Fprintf(os.Stderr, "Unable to parse keys file '%v': %v\n", *keysFile, err)
 				os.Exit(1)
 			}
 		} else {
@@ -150,9 +150,8 @@ func main() {
 			// Then generate some random key pairs and integrate our stealth session into the ring
 			ring.Generate(*n)
 			ring.PrivKeys[0] = stealthSessionBobToAlice.MyAddresses[0].Private
-			ring.PubKeys[0] = stealthSessionAliceToBob.TheirAddresses[0].Public			
+			ring.PubKeys[0] = stealthSessionAliceToBob.TheirAddresses[0].Public
 		}
-
 
 		decoded, err := hex.DecodeString(*m)
 		if err != nil {
