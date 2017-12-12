@@ -1,7 +1,5 @@
 # Orbital
 
-[![Build Status](https://travis-ci.org/clearmatics/bn256.svg?branch=ci)](https://travis-ci.org/clearmatics/bn256)
-
 Orbital is a command-line tool to generate off-chain data required by [Möbius][3], a smart contract that offers trustless tumbling for transaction privacy.
 
 ## Prerequisites
