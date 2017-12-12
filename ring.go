@@ -16,7 +16,7 @@ type Ring struct {
 	PrivKeys []*big.Int   `json:"privkeys"`
 }
 
-
+// MarshalJSON converts a Ring to a JSON representation
 func (r *Ring) MarshalJSON() ([]byte, error) {
 	pks := make([]*hexBig, len(r.PrivKeys))
 	for i, v := range r.PrivKeys {
@@ -32,6 +32,7 @@ func (r *Ring) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// UnmarshalJSON converts a JSON representation to a Ring struct 
 func (r *Ring) UnmarshalJSON(data []byte) error {
 	var aux struct {
 		PubKeys  []CurvePoint `json:"pubkeys"`
@@ -61,7 +62,7 @@ func convert(data []byte) *big.Int {
 
 var curveB = new(big.Int).SetInt64(3)
 
-
+// PublicKeysHashed returns the hashed public key for the given Ring
 func (r Ring) PublicKeysHashed() [sha256.Size]byte {
 	var out [sha256.Size]byte
 

@@ -21,7 +21,7 @@ type CurvePoint struct {
 	z *bn256.G1
 }
 
-
+// MarshalJSON converts a CurvePoint to a JSON representation
 func (c *CurvePoint) MarshalJSON() ([]byte, error) {
 	x, y := c.GetXY()
 	return json.Marshal(&struct {
@@ -33,7 +33,7 @@ func (c *CurvePoint) MarshalJSON() ([]byte, error) {
 	})
 }
 
-
+// UnmarshalJSON converts a JSON representation to a CurvePoint struct 
 func (c *CurvePoint) UnmarshalJSON(data []byte) error {
 	var aux struct {
 		X *hexBig `json:"x"`
@@ -62,10 +62,12 @@ func (c CurvePoint) Equals(d *CurvePoint) bool {
 	return bytes.Compare(c.Marshal(), d.Marshal()) == 0;
 }
 
+// Prime returns the prime component of the BN256 curve
 func (c CurvePoint) Prime() *big.Int {
 	return bn256.P
 }
 
+// Order returns the order component of the BN256 curve
 func (c CurvePoint) Order() *big.Int {
 	return bn256.Order
 }
@@ -103,6 +105,7 @@ func (c CurvePoint) RandomP() *big.Int {
 	return randomPositiveBelow(c.Prime())
 }
 
+// GetXY returns the X and Y coordinates for a given CurvePoint
 func (c CurvePoint) GetXY() (*big.Int, *big.Int) {
 	// Each value is a 256-bit number.	
 	const numBytes = 256 / 8
@@ -115,6 +118,7 @@ func (c CurvePoint) GetXY() (*big.Int, *big.Int) {
 	return nil, nil
 }
 
+// SetFromXY returns a CurvePoint based on the provided x and Y coordinates
 func (c *CurvePoint) SetFromXY (x *big.Int, y *big.Int) *CurvePoint {
 	const numBytes = 256 / 8
 
@@ -134,10 +138,12 @@ func (c *CurvePoint) SetFromXY (x *big.Int, y *big.Int) *CurvePoint {
 	return nil
 }
 
+// Marshal converts a CurvePoint to a JSON representation
 func (c CurvePoint) Marshal() []byte {
 	return c.z.Marshal()
 }
 
+// Unmarshal converts a JSON representation to a CurvePoint struct 
 func (c CurvePoint) Unmarshal(m []byte) bool {
 	_, ret := c.z.Unmarshal(m)
 	return ret
@@ -152,6 +158,7 @@ func (c CurvePoint) String() string {
 	return fmt.Sprintf("CurvePoint(%v)", c.z)
 }
 
+// NewCurvePointFromString create a CurvePoint from a string representation
 func NewCurvePointFromString(s []byte) *CurvePoint {
 	return NewCurvePointFromHash(sha256.Sum256(s))
 }

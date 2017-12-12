@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 )
 
-
+// IsDigit returns if the provided character is a digit
 func IsDigit(s byte) (bool) {
 	_, e := strconv.ParseUint(string(s), 10, 8)
 	return e == nil
