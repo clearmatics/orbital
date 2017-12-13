@@ -42,6 +42,21 @@ func TestRingSignature(t *testing.T) {
 	}
 }
 
+func BenchmarkRingSignature(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		b.StopTimer()
+		i := 1
+		r := generateRing(i)
+		message := []byte("foobarbaz")
+
+		b.StartTimer()
+		_, err := r.Signature(r.PrivKeys[0], message, 0)
+		if err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
 func TestRingSignatures(t *testing.T) {
 	i := 4
 	r := generateRing(i)
@@ -56,6 +71,21 @@ func TestRingSignatures(t *testing.T) {
 	actual := len(sigs)
 	if actual != expected {
 		t.Errorf("Expected %v but got %v", expected, actual)
+	}
+}
+
+func BenchmarkRingSignatures(b *testing.B) {
+	for n := 0; n < b.N; n++ {
+		b.StopTimer()
+		i := 4
+		r := generateRing(i)
+		message := []byte("foobarbaz")
+
+		b.StartTimer()
+		_, err := r.Signatures(message)
+		if err != nil {
+			b.Fatal(err)
+		}
 	}
 }
 
@@ -76,6 +106,32 @@ func TestVerifySignature(t *testing.T) {
 	}
 }
 
+func BenchmarkVerifySignature(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		// Stop clock
+		b.StopTimer()
+		i := 1
+		r := generateRing(i)
+		message := []byte("foobarbaz")
+
+		sig, err := r.Signature(r.PrivKeys[0], message, 0)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		expected := true
+
+		// Start clock
+		b.StartTimer()
+
+		actual := r.VerifySignature(message, *sig)
+		if actual != expected {
+			b.Errorf("Expected %v but got %v", expected, actual)
+		}
+	}
+}
+
 func TestVerifySignatures(t *testing.T) {
 	i := 4
 	r := generateRing(i)
@@ -90,6 +146,31 @@ func TestVerifySignatures(t *testing.T) {
 		actual := r.VerifySignature(message, sig)
 		if actual != expected {
 			t.Errorf("Expected %v but got %v", expected, actual)
+		}
+	}
+}
+
+func BenchmarkVerifySignatures(b *testing.B) {
+
+	for n := 0; n < b.N; n++ {
+		// Stop clock
+		b.StopTimer()
+		i := 4
+		r := generateRing(i)
+		message := []byte("foobarbaz")
+		sigs, err := r.Signatures(message)
+		if err != nil {
+			b.Fatal(err)
+		}
+
+		// Start clock
+		b.StartTimer()
+		for _, sig := range sigs {
+			expected := true
+			actual := r.VerifySignature(message, sig)
+			if actual != expected {
+				b.Errorf("Expected %v but got %v", expected, actual)
+			}
 		}
 	}
 }
