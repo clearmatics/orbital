@@ -14,13 +14,13 @@ import (
 )
 
 func flagUsage() {
-	usageText := `Orbital generates off-chain data for Möbius contracts 
+	usageText := `Orbital generates off-chain data for Möbius contracts
 
 	Usage:
 	orbital command [arguments]
 	The commands are:
 	generate	Generate public/private key pairs for a contract
-	inputs		Generate data inputs for a contract 
+	inputs		Generate data inputs for a contract
 	verify		Verify a set of public keys against signatures
 	stealth		Generate stealth addresses
 	Use "orbital [command] --help" for more information about a command.`
@@ -100,7 +100,7 @@ func main() {
 		fmt.Println(string(ringJSON))
 
 	case "inputs":
-		keysFile := inputsCmd.String("k", "", "Load signing keys from a JSON file")
+		keysFile := inputsCmd.String("f", "", "Load signing keys from a JSON file")
 		n := inputsCmd.Int("n", 0, "The size of the ring to be generated e.g. 4")
 		m := inputsCmd.String("m", "", "A Hex encoded string to be used to generate the ring")
 		inputsCmd.Parse(os.Args[2:])
